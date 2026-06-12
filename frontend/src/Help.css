@@ -1,0 +1,235 @@
+/* ── Help page overrides (extends Home.css) ── */
+
+/* Quick links in hero card */
+.help-quick-link {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.help-quick-link:hover {
+    background: #eff6ff;
+}
+
+/* ── Tips Grid ── */
+.help-tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    width: 100%;
+}
+
+.help-tip-card {
+    background: #f8faff;
+    border: 1.5px solid #e8f0fe;
+    border-radius: 16px;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.help-tip-card:hover {
+    transform: translateY(-4px);
+    border-color: #0066cc;
+    box-shadow: 0 8px 24px rgba(0, 102, 204, 0.12);
+    background: #eff6ff;
+}
+
+.help-tip-icon {
+    font-size: 2rem;
+}
+
+.help-tip-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #0a1628;
+}
+
+.help-tip-desc {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+/* ── FAQ ── */
+.help-faq-section {
+    align-items: flex-start !important;
+}
+
+.help-faq-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.help-faq-item {
+    border: 1.5px solid #e8f0fe;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f8faff;
+    transition: border-color 0.2s;
+}
+
+.help-faq-open {
+    border-color: #0066cc;
+}
+
+.help-faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0a1628;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.help-faq-q:hover {
+    background: #eff6ff;
+}
+
+.help-faq-arrow {
+    color: #0066cc;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.help-faq-a {
+    padding: 0 20px 16px;
+    font-size: 0.9rem;
+    color: #334155;
+    line-height: 1.8;
+    border-top: 1px solid #e8f0fe;
+    padding-top: 14px;
+}
+
+/* ── API Section ── */
+.help-api-section {
+    align-items: flex-start !important;
+}
+
+.help-endpoints {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.help-endpoint-card {
+    background: #f8faff;
+    border: 1.5px solid #e8f0fe;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s;
+}
+
+.help-endpoint-card:hover {
+    border-color: #0066cc;
+}
+
+.help-endpoint-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.help-method {
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.help-method.get {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.help-method.post {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.help-endpoint-path {
+    font-family: 'Courier New', monospace;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #0a1628;
+}
+
+.help-endpoint-desc {
+    font-size: 0.88rem;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.help-endpoint-example {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.help-example-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.help-pre {
+    background: #0a1628;
+    color: #60a5fa;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.help-code {
+    background: #eff6ff;
+    color: #0066cc;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+    .help-tips-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .help-pre {
+        font-size: 0.72rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .help-tips-grid {
+        grid-template-columns: 1fr;
+    }
+}
