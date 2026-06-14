@@ -1,13 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css');
+@import './utilities.css';
+
+:root {
+  /* Colors - Corporate Swiss Precision Palette */
+  --color-bg: #FFFFFF;
+  --color-text: #2A3439;
+  --color-text-rgb: 42, 52, 57;
+  --color-accent: #00356B;
+  --color-border: #E2E8F0;
+  --color-muted: #64748B;
+  --color-surface: #FAFAFA;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+
+  /* Fonts */
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Layout */
+  --container-max: 1440px;
+  --grid-gap: 24px;
+  --header-height: 88px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  outline: none;
+}
+
+/* Base Layout Classes */
+.swiss-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--grid-gap);
+  max-width: var(--container-max);
+  /* Longhand only (no padding/margin shorthand): keeps the vertical axis
+     untouched so spacing utilities on the same element are not clobbered. */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.section-padding {
+  padding: 128px 0;
+}
+
+/* Typography Utilities */
+.text-h1 { font-size: 84px; font-weight: 800; line-height: 0.9; }
+.text-h2 { font-size: 64px; font-weight: 800; line-height: 1; }
+.text-h3 { font-size: 48px; font-weight: 800; }
+.text-lead { font-size: 20px; font-weight: 300; line-height: 1.6; }
+.text-xs-bold { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; }
+
+/* Common UI Elements */
+.btn-primary {
+  background-color: var(--color-text);
+  color: white;
+  padding: 20px 40px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover {
+  background-color: #000000;
+  transform: translateY(-2px);
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  color: white;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--font-heading);
+  transition: background-color 0.2s ease;
+}
+
+.btn-accent:hover {
+  background-color: #002855;
+}
+
+.border-hairline {
+  border-bottom: 1px solid rgba(var(--color-text-rgb), 0.1);
+}
+
+/* Active nav state (shared Navbar) */
+.nav-item.active {
+  color: var(--color-accent);
+  position: relative;
+}
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-accent);
+}
+
+/* Shared Components — Footer & Modifiers (used across all pages) */
+.wordmark-box.small { width: 28px; height: 28px; font-size: 14px; }
+.wordmark-text.small { font-size: 18px; }
+
+.btn-accent.secondary {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.btn-accent.secondary:hover {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.footer-bio {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.6;
+  margin-bottom: 32px;
+  max-width: 320px;
+}
+
+.footer-mini-bio {
+  font-size: 14px;
+  opacity: 0.5;
+  margin-top: 16px;
+  margin-bottom: 32px;
+}
+
+.footer-nav-mini span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: color 0.2s, opacity 0.2s;
+}
+.footer-nav-mini span:hover { opacity: 1; color: var(--color-accent); }
+
+.legal-copy {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.status-copy {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* Marquee Utilities */
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.marquee-track {
+  display: inline-flex;
+  gap: 80px;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .text-h1 { font-size: 60px; }
+  .text-h2 { font-size: 48px; }
+  .swiss-grid { padding-left: 24px; padding-right: 24px; }
+}
+
+@media (max-width: 768px) {
+  .text-h1 { font-size: 48px; }
+  .text-h2 { font-size: 36px; }
+  .section-padding { padding: 80px 0; }
 }

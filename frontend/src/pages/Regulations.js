@@ -1,332 +1,396 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Home.css';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import './Regulations.css';
 
 const REGULATIONS = [
-    {
-        country: 'USA',
-        flag: 'USA',
-        authority: 'FDA',
-        fullName: 'Food and Drug Administration',
-        color: '#0066cc',
-        badge: 'FDA — USA',
-        framework: '21 CFR Part 801 / UDI Rule',
-        summary: 'The FDA requires medical device labels to carry a Unique Device Identifier (UDI), manufacturer details, and clear warnings. Class II and III devices face stricter labeling under 510(k) and PMA pathways.',
-        countryNote: 'FDA labeling requirements may vary depending on device classification, intended use, and regulatory pathway (510(k), De Novo, or PMA).',
-        fields: [
-            { name: 'Device Name', required: true, note: 'Must match 510(k)/PMA submission' },
-            { name: 'UDI', required: true, note: 'Device Identifier (DI) + Production Identifier (PI), where PI may include lot number, serial number, expiry date, or manufacturing date.' },
-            { name: 'Manufacturer', required: true, note: 'Name and place of business of manufacturer, packer, or distributor.' },
-            { name: 'Warnings', required: true, note: 'Federal law restriction statement' },
-            { name: 'Expiry Date', required: true, note: 'If applicable' },
-            { name: 'Lot Number', required: false, note: 'Include when used as part of device traceability and UDI production identifier.' },
-            { name: 'Rx Only', required: false, note: 'Required for prescription devices' },
-            { name: 'Sterile Symbol', required: false, note: 'ISO 15223-1 symbol if sterile' },
-        ],
-        links: [
-            { label: 'FDA UDI Rule', url: 'https://www.fda.gov/medical-devices/unique-device-identification-system-udi-system' },
-            { label: '21 CFR Part 801', url: 'https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801' },
-        ],
-    },
-    {
-        country: 'UK',
-        flag: 'UK',
-        authority: 'MHRA',
-        fullName: 'Medicines and Healthcare products Regulatory Agency',
-        color: '#c0392b',
-        badge: 'MHRA — UK',
-        framework: 'UK MDR 2002 / UKCA Marking',
-        summary: 'Post-Brexit, the UK follows its own MDR 2002 framework. Devices must carry a UKCA mark and list a UK Responsible Person. Great Britain and Northern Ireland have different requirements.',
-        countryNote: 'Great Britain and Northern Ireland may have different medical device labeling requirements.',
-        fields: [
-            { name: 'Device Name', required: true, note: 'Common or trade name' },
-            { name: 'Manufacturer', required: true, note: 'Full name and address' },
-            { name: 'UKCA Marking', required: true, note: 'Required for GB market' },
-            { name: 'Expiry Date', required: true, note: 'If applicable' },
-            { name: 'UDI', required: false, note: 'UK UDI requirements are being implemented through phased regulatory reforms.' },
-            { name: 'UK Responsible Person', required: false, note: 'Required for manufacturers located outside the UK.' },
-            { name: 'Warnings', required: false, note: 'Device-class dependent' },
-            { name: 'EC REP', required: false, note: 'May be required for certain CE-marked devices marketed in Northern Ireland.' },
-        ],
-        links: [
-            { label: 'MHRA Guidance', url: 'https://www.gov.uk/guidance/medical-devices-uk-approved-bodies-and-the-ukca-mark' },
-            { label: 'UK MDR 2002', url: 'https://www.legislation.gov.uk/uksi/2002/618/contents' },
-        ],
-    },
-    {
-        country: 'India',
-        flag: 'IND',
-        authority: 'CDSCO',
-        fullName: 'Central Drugs Standard Control Organisation',
-        color: '#e67e22',
-        badge: 'CDSCO — India',
-        framework: 'MDR 2017 / Medical Devices Rules',
-        summary: "India's Medical Devices Rules 2017 mandate registration with CDSCO. Import and manufacturing licenses are required, and labels must include storage conditions and local importer details.",
-        countryNote: 'Requirements may vary based on device classification and whether the device is domestically manufactured or imported.',
-        fields: [
-            { name: 'Device Name', required: true, note: 'As per CDSCO registration' },
-            { name: 'Manufacturer', required: true, note: 'Include manufacturer name and country of origin.' },
-            { name: 'Lot Number', required: true, note: 'Batch number mandatory' },
-            { name: 'Expiry Date', required: true, note: 'Month and year format' },
-            { name: 'Storage Conditions', required: true, note: 'Temperature and humidity range' },
-            { name: 'License Numbers', required: true, note: 'Manufacturing License or Import License number as applicable.' },
-            { name: 'Importer Details', required: false, note: 'Required only for imported medical devices.' },
-            { name: 'UDI', required: false, note: 'Implementation is being introduced in phases for medical devices.' },
-        ],
-        links: [
-            { label: 'CDSCO Portal', url: 'https://cdsco.gov.in/opencms/opencms/en/Medical-Device-Diagnostics/' },
-            { label: 'MDR 2017', url: 'https://cdsco.gov.in/opencms/opencms/en/Medical-Device-Diagnostics/Medical-Device-Rules-2017/' },
-        ],
-    },
-    {
-        country: 'Japan',
-        flag: 'JPN',
-        authority: 'PMDA',
-        fullName: 'Pharmaceuticals and Medical Devices Agency',
-        color: '#8e44ad',
-        badge: 'PMDA — Japan',
-        framework: 'PMDEA / Notification 169',
-        summary: 'Japan requires a Marketing Authorization Holder (MAH) to be a Japan-registered entity. Labels must be in Japanese. The PMDA oversees approval and post-market surveillance under the PMDEA law.',
-        countryNote: 'Labeling requirements may differ depending on device risk classification and approval category.',
-        fields: [
-            { name: 'Device Name', required: true, note: 'Japanese and English name' },
-            { name: 'MAH (Marketing Authorization Holder)', required: true, note: 'Must be a Japan-registered Marketing Authorization Holder.' },
-            { name: 'UDI', required: true, note: 'Device identification should comply with Japanese traceability requirements, commonly using GS1 standards.' },
-            { name: 'Lot Number', required: true, note: 'ロット番号 on label' },
-            { name: 'Expiry Date', required: true, note: 'Japanese date format' },
-            { name: 'Japanese Label', required: true, note: 'Product information must be available in Japanese.' },
-            { name: 'Manufacturer', required: false, note: 'If different from MAH' },
-            { name: 'Storage Conditions', required: false, note: 'Recommended for sensitive devices' },
-        ],
-        links: [
-            { label: 'PMDA Official', url: 'https://www.pmda.go.jp/english/index.html' },
-            { label: 'PMDEA Overview', url: 'https://www.mhlw.go.jp/english/policy/health-medical/pharmaceuticals/01.html' },
-        ],
-    },
+  {
+    country: 'USA',
+    authority: 'FDA',
+    fullName: 'Food and Drug Administration',
+    framework: '21 CFR Part 801 / UDI Rule',
+    summary: "The FDA requires medical device labels to carry a Unique Device Identifier (UDI), manufacturer details, and clear warnings. Class II and III devices face stricter labeling under 510(k) and PMA pathways.",
+    requiredFields: [
+      { name: 'Device Name', note: 'Must match 510(k)/PMA submission exactly.' },
+      { name: 'UDI', note: 'Device Identifier (DI) + Production Identifier (PI).' },
+      { name: 'Manufacturer', note: 'Name and place of business of manufacturer or distributor.' },
+      { name: 'Warnings', note: 'Specific federal law restriction statements.' },
+      { name: 'Expiry Date', note: 'Required where shelf-life is a critical factor.' },
+      { name: 'Lot Number', note: 'Batch or serial number for traceability.' },
+      { name: 'Rx Only', note: 'Prescription only statement as per 21 CFR 801.109.' },
+      { name: 'FDA-compliant labeling', note: 'Compliance with 21 CFR 801 labeling requirements.' },
+    ],
+    optionalFields: [
+      { name: 'Storage Conditions', note: 'Temperature and humidity storage guidelines.' },
+      { name: 'Sterility Indicator', note: 'Required for sterile devices; optional for non-sterile.' },
+      { name: 'Country of Origin', note: 'Optional but recommended for import/export.' },
+    ],
+    regulatoryMarks: ['UDI', 'Rx Only'],
+    warnings: [
+      'Federal law restricts this device to sale by or on the order of a physician.',
+      'Single use only — do not reuse, reprocess, or re-sterilize.',
+      'Read all instructions and warnings before use.',
+    ],
+    countrySpecific: [
+      'GUDID (Global Unique Device Identification Database) submission required.',
+      '510(k) clearance or PMA approval must be referenced on label.',
+      'English labeling required; foreign-language additions are permitted.',
+    ],
+  },
+  {
+    country: 'UK',
+    authority: 'MHRA',
+    fullName: 'Medicines and Healthcare products Regulatory Agency',
+    framework: 'UK MDR 2002 / UKCA Marking',
+    summary: "Post-Brexit, the UK follows its own MDR 2002 framework. Devices must carry a UKCA mark and list a UK Responsible Person for manufacturers based outside Great Britain.",
+    requiredFields: [
+      { name: 'Device Name', note: 'Common or trade name.' },
+      { name: 'Manufacturer', note: 'Full name and registered business address.' },
+      { name: 'UKCA marking', note: 'Required for devices marketed in Great Britain.' },
+      { name: 'UK Responsible Person', note: 'UK Responsible Person details for non-UK manufacturers.' },
+      { name: 'Expiry Date', note: 'Mandatory for all limited-life devices.' },
+      { name: 'UDI', note: 'UDI required per UK MDR Schedule 1.' },
+      { name: 'Lot Number', note: 'Batch number for traceability.' },
+      { name: 'Warnings', note: 'Hazard and precautionary statements in English.' },
+    ],
+    optionalFields: [
+      { name: 'CE Marking', note: 'CE marking accepted for Northern Ireland only (NI Protocol).' },
+      { name: 'Storage Conditions', note: 'Recommended for temperature-sensitive devices.' },
+      { name: 'Sterility Type', note: 'EO, radiation, or steam sterilisation method.' },
+    ],
+    regulatoryMarks: ['UKCA', 'UK Responsible Person (UKRP)'],
+    warnings: [
+      'For use under the supervision of a qualified healthcare professional.',
+      'Keep out of reach of children.',
+      'Consult Instructions for Use (IFU) before operating.',
+    ],
+    countrySpecific: [
+      'UKCA mark mandatory for Great Britain market (England, Scotland, Wales).',
+      'UK Responsible Person must be based in the United Kingdom.',
+      'MHRA registration required via the online portal before placing on market.',
+    ],
+  },
+  {
+    country: 'India',
+    authority: 'CDSCO',
+    fullName: 'Central Drugs Standard Control Organisation',
+    framework: 'MDR 2017 / Medical Devices Rules',
+    summary: "India's Medical Devices Rules 2017 mandate registration with CDSCO. Labels must include storage conditions, manufacturing license numbers, and local importer details.",
+    requiredFields: [
+      { name: 'Device Name', note: 'As per CDSCO registration certificate.' },
+      { name: 'Manufacturer', note: 'Name, address, and country of origin.' },
+      { name: 'Manufacturing License No.', note: 'Manufacturing License issued by CDSCO.' },
+      { name: 'Import License No.', note: 'Import License number for imported devices.' },
+      { name: 'Lot Number', note: 'Batch or Serial number for traceability.' },
+      { name: 'Storage Conditions', note: 'Specific temperature and humidity conditions.' },
+      { name: 'Expiry Date', note: 'Mandatory — format DD/MM/YYYY.' },
+      { name: 'Warnings', note: 'Hazard warnings in English and Hindi (for retail devices).' },
+    ],
+    optionalFields: [
+      { name: 'UDI', note: 'Encouraged under India UDI roadmap; mandatory from 2026.' },
+      { name: 'Net Quantity', note: 'Number of units or volume per package.' },
+      { name: 'Importer Details', note: 'Indian importer name and address (for imported devices).' },
+    ],
+    regulatoryMarks: ['Manufacturing License No.', 'Import License No.', 'CDSCO Registration'],
+    warnings: [
+      'To be sold by retail on the prescription of a Registered Medical Practitioner only.',
+      'Store in a cool and dry place.',
+      'Keep away from direct sunlight.',
+    ],
+    countrySpecific: [
+      'CDSCO registration mandatory under Medical Devices Rules 2017.',
+      'Labeling must comply with Schedule II of MDR 2017.',
+      'Hindi labeling required for devices sold at retail level.',
+    ],
+  },
+  {
+    country: 'Japan',
+    authority: 'PMDA',
+    fullName: 'Pharmaceuticals and Medical Devices Agency',
+    framework: 'PMDEA / Notification 169',
+    summary: "Japan requires a Marketing Authorization Holder (MAH) to be a Japan-registered entity. All clinical safety labels must be provided in Japanese for local healthcare use.",
+    requiredFields: [
+      { name: 'Device Name', note: 'Must include Japanese trade name.' },
+      { name: 'MAH', note: 'Japan-registered Marketing Authorization Holder.' },
+      { name: 'UDI', note: 'GS1-standard barcode as per PMDA traceability rule.' },
+      { name: 'Japanese-language label', note: 'Instructions and warnings in Japanese language.' },
+      { name: 'Lot Number', note: 'Traceability number (ロット番号).' },
+      { name: 'Expiry Date', note: 'Format: YYYY年MM月DD日.' },
+      { name: 'Manufacturer', note: 'Name of foreign manufacturer and Japanese MAH.' },
+      { name: 'Warnings', note: 'Safety warnings in Japanese (警告事項).' },
+    ],
+    optionalFields: [
+      { name: 'Storage Conditions', note: 'Storage temperature in Celsius; humidity conditions.' },
+      { name: 'Country of Origin', note: 'Recommended for imported devices.' },
+      { name: 'Sterility Statement', note: 'Required for sterile devices; optional otherwise.' },
+    ],
+    regulatoryMarks: ['MAH', 'Japanese Labeling'],
+    warnings: [
+      '本製品は医療専門家の監督下でのみ使用してください。 (Use only under medical professional supervision.)',
+      '再使用禁止。 (Single use only — do not reuse.)',
+      '添付の使用説明書を必ずお読みください。 (Read the attached Instructions for Use.)',
+    ],
+    countrySpecific: [
+      'MAH must hold PMDA license and be registered in Japan.',
+      'All labeling, IFU, and packaging must be in Japanese language.',
+      'Shonin (承認) or Ninsho (認証) approval number must be displayed.',
+    ],
+  },
 ];
 
-const GLOBAL_DISCLAIMER = 'Regulatory Disclaimer: Labeling requirements shown here are a simplified overview. Actual requirements may vary based on device classification, intended use, sterility, implantability, prescription status, and local regulatory updates.';
+// ── Comparison matrix data ───────────────────────────────────────────────────
+const MATRIX_ROWS = [
+  ['Unique Device ID (UDI)', true, true, false, true],
+  ['Manufacturer Details', true, true, true, true],
+  ['Batch / Lot Coding', true, true, true, true],
+  ['Shelf Life / Expiry', true, true, true, true],
+  ['Storage Constraints', false, false, true, false],
+  ['Regional Language', false, false, true, true],
+  ['Country-specific Mark', true, true, true, true],
+  ['Prescription Statement', true, false, true, false],
+];
 
 export default function Regulations() {
-    const navigate = useNavigate();
-    const [active, setActive] = useState('USA');
-    const reg = REGULATIONS.find(r => r.country === active);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [active, setActive] = useState(location.state?.country || 'USA');
+  const reg = REGULATIONS.find(r => r.country === active);
 
-    const requiredFields = reg.fields.filter(f => f.required);
-    const optionalFields = reg.fields.filter(f => !f.required);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
-    return (
-        <div className="home-wrapper">
+  // When navigated here with a country in state, switch to it
+  useEffect(() => {
+    if (location.state?.country) {
+      setActive(location.state.country);
+    }
+  }, [location.state]);
 
-            {/* Alert Bar */}
-            <div className="home-alert-bar">
-                🏥 Regulatory compliance checker for medical device labels — India · USA · UK · Japan
+  return (
+    <div className="reg-site">
+      <div className="utility-bar">
+        Regulatory Standards Index v8.4 &middot; Institutional Reference
+      </div>
+
+      <Navbar />
+
+      <header className="reg-hero py-24 border-b border-hairline-light bg-surface">
+        <div className="swiss-grid">
+          <div className="col-span-8">
+            <span className="text-xs-bold text-accent mb-4 block">Regulatory Reference Library</span>
+            <h1 className="text-h1 mb-8">Medical Device Label Standards.</h1>
+            <p className="text-lead opacity-70 max-w-2xl">
+              Deterministic labeling requirements across 4 global jurisdictions.
+              Our rulesets are synchronized with FDA, MHRA, CDSCO, and PMDA databases.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {/* Country Tabs */}
+      <section className="reg-selection py-20 border-b border-hairline-light">
+        <div className="swiss-grid">
+          <div className="col-span-12">
+            <div className="country-tabs">
+              {REGULATIONS.map(r => (
+                <button
+                  key={r.country}
+                  className={`tab-item ${active === r.country ? 'active' : ''}`}
+                  onClick={() => setActive(r.country)}
+                >
+                  <span className="text-xs-bold block mb-2">{r.country}</span>
+                  <span className="tab-auth">{r.authority}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Details */}
+      <section className="reg-details section-padding">
+        <div className="swiss-grid mb-24">
+          <div className="col-span-4">
+            <span className="text-xs-bold text-accent mb-2 block">Authority Metadata</span>
+            <h2 className="text-h2 mb-6">{reg.authority}</h2>
+            <p className="font-mono text-xs opacity-50 mb-10 uppercase tracking-widest">{reg.fullName}</p>
+            <div className="framework-box p-6 border-2 border-text mb-8">
+              <span className="text-xs-bold">Active Framework</span>
+              <p className="text-lg font-bold mt-2">{reg.framework}</p>
             </div>
 
-            {/* Header */}
-            <header className="home-header">
-                <div className="home-logo">
-                    <div className="home-logo-cross">✚</div>
-                    <div className="home-logo-text-block">
-                        <span className="home-logo-title">MedLabel Verify</span>
-                        <span className="home-logo-subtitle">Device Label Compliance</span>
-                    </div>
+            {/* Regulatory Marks */}
+            <div className="framework-box p-6 border border-text mb-8">
+              <span className="text-xs-bold mb-4 block">Regulatory Marks</span>
+              {reg.regulatoryMarks.map((m, i) => (
+                <div key={i} style={{
+                  display: 'inline-block', margin: '4px 4px 4px 0',
+                  padding: '4px 12px', border: '1px solid var(--color-accent)',
+                  fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)',
+                }}>
+                  {m}
                 </div>
-                <nav className="home-nav">
-                    <span className="home-nav-item" onClick={() => navigate('/')}>Home</span>
-                    <span className="home-nav-item active">Regulations</span>
-                    <span className="home-nav-item" onClick={() => navigate('/help')}>Help</span>
-                </nav>
-            </header>
+              ))}
+            </div>
 
-            {/* Hero */}
-            <section className="home-hero-banner reg-hero">
-                <div className="home-hero-left">
-                    <div className="home-hero-tag">
-                        <span className="home-hero-tag-dot" />
-                        Global Regulatory Reference
-                    </div>
-                    <h1 className="home-hero-title">
-                        Medical Device<br />
-                        <span className="home-hero-highlight">Label Regulations</span>
-                    </h1>
-                    <p className="home-hero-desc">
-                        Explore the official labeling requirements for medical devices across
-                        <strong> 4 regulatory frameworks</strong> — FDA (USA), MHRA (UK), CDSCO (India), and PMDA (Japan).
-                    </p>
-                    <div className="home-hero-countries">
-                        {REGULATIONS.map(r => (
-                            <div key={r.country} className="home-country-badge">{r.badge}</div>
-                        ))}
-                    </div>
+            {/* Warnings */}
+            <div className="framework-box p-6 border border-text">
+              <span className="text-xs-bold mb-4 block">Standard Warnings</span>
+              {reg.warnings.map((w, i) => (
+                <p key={i} style={{ fontSize: '12px', opacity: 0.65, lineHeight: 1.6, marginBottom: '8px' }}>
+                  ⚠ {w}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-7 col-start-6">
+            <h3 className="text-h3 mb-6">Legislative Summary</h3>
+            <p className="text-lead mb-12 leading-relaxed">{reg.summary}</p>
+
+            {/* Country-specific requirements */}
+            <div style={{ marginBottom: '40px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+              <span className="text-xs-bold mb-4 block text-accent">Country-Specific Requirements</span>
+              {reg.countrySpecific.map((r, i) => (
+                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px', fontSize: '14px', lineHeight: 1.6 }}>
+                  <i className="ti ti-arrow-right" style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: '2px' }}></i>
+                  <span>{r}</span>
                 </div>
-                <div className="home-hero-right">
-                    <div className="home-hero-card">
-                        <div className="home-hero-card-header">📜 Quick Reference</div>
-                        {REGULATIONS.map(r => (
-                            <div key={r.country} className="home-hero-card-row">
-                                <span>{r.country}</span>
-                                <span style={{ color: r.color, fontWeight: 700, fontSize: '0.78rem' }}>{r.authority}</span>
-                            </div>
-                        ))}
-                        <div className="home-hero-card-footer">Click a country to explore</div>
-                    </div>
+              ))}
+            </div>
+
+            {/* Required fields */}
+            <h4 className="text-xs-bold mb-6 block">Required Label Fields</h4>
+            <div className="ledger-wrap border-t border-text">
+              {reg.requiredFields.map((f, i) => (
+                <div key={i} className="ledger-entry grid grid-cols-12 py-8 border-b border-hairline-light">
+                  <div className="col-span-4">
+                    <span className="text-xs-bold text-accent mb-1 block">Required</span>
+                    <span className="text-xl font-bold">{f.name}</span>
+                  </div>
+                  <div className="col-span-8">
+                    <span className="text-xs-bold opacity-30 mb-1 block">Verification Logic</span>
+                    <p className="text-sm font-medium opacity-60 leading-relaxed">{f.note}</p>
+                  </div>
                 </div>
-            </section>
+              ))}
+            </div>
 
-            {/* Country Tabs */}
-            <section className="home-search-section reg-tabs-section">
-                <h2 className="home-section-title">🌍 Select a Regulatory Authority</h2>
-                <div className="reg-tabs">
-                    {REGULATIONS.map(r => (
-                        <button
-                            key={r.country}
-                            className={`reg-tab ${active === r.country ? 'reg-tab-active' : ''}`}
-                            style={active === r.country ? { borderColor: r.color, color: r.color, background: r.color + '15' } : {}}
-                            onClick={() => setActive(r.country)}
-                        >
-
-                            <span className="reg-tab-label">{r.country}</span>
-                            <span className="reg-tab-auth">{r.authority}</span>
-                        </button>
-                    ))}
+            {/* Optional fields */}
+            <h4 className="text-xs-bold mb-6 block" style={{ marginTop: '40px' }}>Optional Label Fields</h4>
+            <div className="ledger-wrap border-t border-text">
+              {reg.optionalFields.map((f, i) => (
+                <div key={i} className="ledger-entry grid grid-cols-12 py-8 border-b border-hairline-light">
+                  <div className="col-span-4">
+                    <span className="text-xs-bold opacity-40 mb-1 block">Optional</span>
+                    <span className="text-xl font-bold">{f.name}</span>
+                  </div>
+                  <div className="col-span-8">
+                    <span className="text-xs-bold opacity-30 mb-1 block">Notes</span>
+                    <p className="text-sm font-medium opacity-60 leading-relaxed">{f.note}</p>
+                  </div>
                 </div>
-            </section>
-
-            {/* Regulation Detail */}
-            <section className="home-upload-section reg-detail-section">
-
-                {/* Header */}
-                <div className="reg-detail-header">
-
-                    <div>
-                        <div className="reg-detail-auth" style={{ color: reg.color }}>{reg.authority} — {reg.country}</div>
-                        <div className="reg-detail-fullname">{reg.fullName}</div>
-                        <div className="reg-detail-framework">📄 {reg.framework}</div>
-                    </div>
-                </div>
-
-                <p className="reg-summary">{reg.summary}</p>
-
-                {/* Required Fields */}
-                <h3 className="reg-fields-heading">Required Label Fields</h3>
-                <div className="reg-fields-grid">
-                    {requiredFields.map(f => (
-                        <div key={f.name} className="reg-field-card reg-field-required">
-                            <div className="reg-field-top">
-                                <span className="reg-field-status">✅ Required</span>
-                            </div>
-                            <div className="reg-field-name">{f.name}</div>
-                            <div className="reg-field-note">{f.note}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Optional Fields */}
-                {optionalFields.length > 0 && (
-                    <>
-                        <h3 className="reg-fields-heading">Optional Label Fields</h3>
-                        <div className="reg-fields-grid">
-                            {optionalFields.map(f => (
-                                <div key={f.name} className="reg-field-card reg-field-optional">
-                                    <div className="reg-field-top">
-                                        <span className="reg-field-status">⚪ Optional</span>
-                                    </div>
-                                    <div className="reg-field-name">{f.name}</div>
-                                    <div className="reg-field-note">{f.note}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-
-                {/* Country-specific note */}
-                <div className="reg-country-note">
-                    <span className="reg-country-note-icon">📝</span>
-                    <p>{reg.countryNote}</p>
-                </div>
-
-                {/* Official Links */}
-                <div className="reg-links-row">
-                    <span className="reg-links-label">📎 Official Resources:</span>
-                    {reg.links.map(l => (
-                        <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="reg-link">
-                            {l.label} ↗
-                        </a>
-                    ))}
-                </div>
-            </section>
-
-            {/* Comparison Table */}
-            <section className="home-steps-section reg-compare-section">
-                <h2 className="home-section-title">📊 Side-by-Side Comparison</h2>
-                <p className="home-section-desc">Key differences across all four regulatory frameworks</p>
-                <div className="reg-table-wrap">
-                    <table className="reg-table">
-                        <thead>
-                            <tr>
-                                <th>Field</th>
-                                <th>USA</th>
-                                <th>UK</th>
-                                <th>India</th>
-                                <th>Japan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {[
-                                ['Device Name', '✅', '✅', '✅', '✅'],
-                                ['UDI', '✅', '⚪', '⚪', '✅'],
-                                ['Manufacturer', '✅', '✅', '✅', '⚪'],
-                                ['Lot Number', '⚪', '⚪', '✅', '✅'],
-                                ['Expiry Date', '✅', '✅', '✅', '✅'],
-                                ['Warnings', '✅', '⚪', '⚪', '⚪'],
-                                ['Storage Conditions', '⚪', '⚪', '✅', '⚪'],
-                                ['MAH / Auth Holder', '⚪', 'UK Rep', '⚪', '✅'],
-                                ['License Numbers', '⚪', '⚪', '✅', '⚪'],
-                                ['UKCA / CE Marking', '⚪', '✅', '⚪', '⚪'],
-                                ['Japanese Label', '⚪', '⚪', '⚪', '✅'],
-                            ].map(([field, ...vals]) => (
-                                <tr key={field}>
-                                    <td className="reg-table-field">{field}</td>
-                                    {vals.map((v, i) => (
-                                        <td key={i} className={`reg-table-val ${v === '✅' ? 'reg-yes' : v === '⚪' ? 'reg-no' : 'reg-special'}`}>{v}</td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <p className="home-section-desc" style={{ fontSize: '0.78rem' }}>✅ Required &nbsp;⚪ Optional / Not mandated &nbsp; Specific text = special condition</p>
-            </section>
-
-            {/* Global Disclaimer */}
-            <section className="home-search-section reg-disclaimer-section">
-                <div className="reg-global-disclaimer">
-                    <span className="reg-disclaimer-icon">⚠️</span>
-                    <p>{GLOBAL_DISCLAIMER}</p>
-                </div>
-            </section>
-
-            {/* CTA */}
-            <section className="home-search-section reg-cta-section">
-                <h2 className="home-section-title">🔍 Check Your Label Now</h2>
-                <p className="home-section-desc">Upload a medical device label to instantly verify compliance against these regulations</p>
-                <button className="home-search-btn reg-cta-btn" onClick={() => navigate('/')}>
-                    Go to Label Checker →
-                </button>
-            </section>
-
-            {/* Footer */}
-            <footer className="home-footer">
-                <div className="home-footer-left">
-                    <span className="home-footer-logo">✚ MedLabel Verify</span>
-                    <span className="home-footer-copy">© 2026 Medical Device Label Compliance Checker</span>
-                </div>
-                <div className="home-footer-right">
-                    <span>CDSCO</span><span>FDA</span><span>MHRA</span><span>PMDA</span>
-                </div>
-            </footer>
+              ))}
+            </div>
+          </div>
         </div>
-    );
+      </section>
+
+      {/* Cross-Jurisdiction Matrix */}
+      <section className="reg-matrix py-32" style={{ backgroundColor: '#f0f0f0' }}>
+        <div className="swiss-grid mb-20">
+          <div className="col-span-6">
+            <h2 className="text-h2 mb-6" style={{ color: '#0a0a0a' }}>Cross-Jurisdiction Matrix</h2>
+            <p className="text-lead" style={{ color: '#0a0a0a', opacity: 0.6 }}>Global alignment of mandatory labeling fields across 4 national frameworks.</p>
+          </div>
+        </div>
+        <div className="swiss-grid mb-20">
+          <div className="col-span-12 overflow-x-auto">
+            <table className="matrix-ledger w-full border-collapse" style={{ color: '#0a0a0a' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(10,10,10,0.15)' }}>
+                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Parameter Name</th>
+                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>USA</th>
+                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>UK</th>
+                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>INDIA</th>
+                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>JAPAN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MATRIX_ROWS.map(([f, ...vals], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(10,10,10,0.08)', transition: 'background 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <td className="py-6 font-bold" style={{ color: '#0a0a0a' }}>{f}</td>
+                    {vals.map((v, j) => (
+                      <td key={j} className="py-6 text-center text-2xl">
+                        {v
+                          ? <i className="ti ti-check" style={{ color: 'var(--color-accent)' }}></i>
+                          : <i className="ti ti-minus" style={{ color: '#0a0a0a', opacity: 0.2 }}></i>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Comparison Summary Table */}
+        <div className="swiss-grid">
+          <div className="col-span-12">
+            <h3 className="text-xs-bold mb-10" style={{ color: 'rgba(10,10,10,0.5)' }}>Authority Comparison Summary</h3>
+            <table className="matrix-ledger w-full border-collapse" style={{ color: '#0a0a0a' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(10,10,10,0.15)' }}>
+                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Country</th>
+                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Regulatory Mark</th>
+                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Unique Requirement</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['USA', 'UDI, Rx Only', 'FDA 510(k)/PMA clearance reference required'],
+                  ['UK', 'UKCA, UKRP', 'UK Responsible Person mandatory for non-UK manufacturers'],
+                  ['India', 'License Numbers, CDSCO', 'Hindi labeling required for retail; CDSCO registration mandatory'],
+                  ['Japan', 'MAH', 'Full Japanese-language labeling and PMDA MAH license required'],
+                ].map(([country, mark, req], i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(10,10,10,0.08)', transition: 'background 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <td className="py-6 font-bold" style={{ color: '#0a0a0a' }}>{country}</td>
+                    <td className="py-6" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{mark}</td>
+                    <td className="py-6 text-sm" style={{ color: '#0a0a0a', opacity: 0.65 }}>{req}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer className="footer bg-white border-t-2 border-text pt-24 pb-12">
+        <div className="swiss-grid pb-24 border-b border-hairline-light">
+          <div className="col-span-12 text-center">
+            <div className="logo-group inline-flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate('/')}>
+              <div className="wordmark-box small">M</div>
+              <span className="wordmark-text small">MEDLABEL<span className="wordmark-light">VERIFY</span></span>
+            </div>
+            <p className="footer-mini-bio">The institutional standard for medical device compliance.</p>
+            <div className="flex justify-center gap-12 footer-nav-mini">
+              <span onClick={() => navigate('/')}>Home</span>
+              <span onClick={() => navigate('/regulations')}>Standards</span>
+              <span onClick={() => navigate('/help')}>Documentation</span>
+            </div>
+          </div>
+        </div>
+        <div className="swiss-grid pt-12">
+          <div className="col-span-12 text-center text-xs-bold opacity-40">
+            &copy; 2026 MedLabel Verify INC. Precision compliance technology.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

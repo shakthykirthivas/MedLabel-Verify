@@ -1,385 +1,77 @@
-/* ── Regulations page overrides (extends Home.css) ── */
-
-.reg-hero {
-    padding-bottom: 50px;
+.reg-site {
+  --color-hairline: rgba(42, 52, 57, 0.1);
 }
 
-/* ── Tabs ── */
-.reg-tabs-section {
-    gap: 16px !important;
+/* Hero */
+.reg-hero .text-h1 {
+  max-width: 12ch;
 }
 
-.reg-tabs {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    justify-content: center;
+/* Tabs */
+.country-tabs {
+  display: flex;
+  width: 100%;
 }
 
-.reg-tab {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    background: #f8faff;
-    border: 2px solid #e8f0fe;
-    border-radius: 16px;
-    padding: 16px 28px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Outfit', sans-serif;
-    min-width: 110px;
+.tab-item {
+  flex: 1;
+  padding: 32px;
+  border: 1px solid var(--color-hairline);
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: white;
 }
 
-.reg-tab:hover {
-    transform: translateY(-3px);
-    border-color: #0066cc;
-    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.12);
+.tab-item .text-xs-bold { opacity: 0.3; transition: opacity 0.3s; }
+
+.tab-item.active {
+  background-color: var(--color-surface);
+  border-bottom: 2px solid var(--color-accent);
 }
 
-.reg-tab-active {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.15);
+.tab-item.active .text-xs-bold { opacity: 1; color: var(--color-accent); }
+
+.tab-auth {
+  display: block;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
 }
 
-.reg-tab-flag {
-    font-size: 1.8rem;
-    line-height: 1;
+/* Details */
+.framework-box {
+  background: white;
 }
 
-.reg-tab-label {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #0a1628;
+.ledger-entry { transition: background-color 0.2s; }
+.ledger-entry:hover { background-color: var(--color-surface); }
+
+/* Matrix Table */
+.matrix-ledger {
+  min-width: 800px;
 }
 
-.reg-tab-auth {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+.matrix-ledger th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ── Detail Section ── */
-.reg-detail-section {
-    align-items: flex-start !important;
-    gap: 24px !important;
+.matrix-ledger td {
+  padding: 24px 0;
 }
 
-.reg-detail-header {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #e8f0fe;
+.matrix-ledger tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.reg-detail-flag {
-    font-size: 3.5rem;
-    line-height: 1;
+/* Mobile */
+@media (max-width: 1024px) {
+  .country-tabs { flex-wrap: wrap; }
+  .tab-item { flex: 1 1 50%; }
 }
 
-.reg-detail-auth {
-    font-size: 1.2rem;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-}
-
-.reg-detail-fullname {
-    font-size: 0.9rem;
-    color: #334155;
-    font-weight: 500;
-    margin-top: 2px;
-}
-
-.reg-detail-framework {
-    font-size: 0.82rem;
-    color: #64748b;
-    font-weight: 600;
-    margin-top: 6px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 50px;
-    padding: 3px 12px;
-    display: inline-block;
-}
-
-.reg-summary {
-    font-size: 0.97rem;
-    color: #334155;
-    line-height: 1.8;
-    background: #f8faff;
-    border-left: 4px solid #0066cc;
-    border-radius: 0 12px 12px 0;
-    padding: 16px 20px;
-    width: 100%;
-}
-
-/* ── Fields Grid ── */
-.reg-fields-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    width: 100%;
-}
-
-.reg-field-card {
-    border-radius: 14px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border: 1.5px solid;
-    transition: transform 0.2s;
-}
-
-.reg-field-card:hover {
-    transform: translateY(-3px);
-}
-
-.reg-field-required {
-    background: #f0fff4;
-    border-color: #86efac;
-}
-
-.reg-field-optional {
-    background: #f8faff;
-    border-color: #e2e8f0;
-}
-
-.reg-field-top {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.reg-field-status {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.reg-field-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #0a1628;
-}
-
-.reg-field-note {
-    font-size: 0.78rem;
-    color: #64748b;
-    line-height: 1.4;
-}
-
-/* ── Links ── */
-.reg-links-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    width: 100%;
-    padding-top: 8px;
-    border-top: 1px solid #e8f0fe;
-}
-
-.reg-links-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #334155;
-}
-
-.reg-link {
-    background: #eff6ff;
-    color: #0066cc;
-    border: 1px solid #bfdbfe;
-    border-radius: 50px;
-    padding: 5px 14px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.reg-link:hover {
-    background: #0066cc;
-    color: white;
-    border-color: #0066cc;
-}
-
-/* ── Comparison Table ── */
-.reg-compare-section {
-    align-items: flex-start !important;
-}
-
-.reg-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    border-radius: 14px;
-    border: 1px solid #e8f0fe;
-}
-
-.reg-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.88rem;
-}
-
-.reg-table thead tr {
-    background: #0a1628;
-    color: #e2e8f0;
-}
-
-.reg-table thead th {
-    padding: 13px 18px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 0.88rem;
-    letter-spacing: 0.02em;
-}
-
-.reg-table thead th:first-child {
-    text-align: left;
-}
-
-.reg-table tbody tr {
-    border-bottom: 1px solid #f1f5f9;
-    transition: background 0.15s;
-}
-
-.reg-table tbody tr:hover {
-    background: #f8faff;
-}
-
-.reg-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.reg-table-field {
-    padding: 12px 18px;
-    font-weight: 600;
-    color: #0a1628;
-    text-align: left;
-    white-space: nowrap;
-}
-
-.reg-table-val {
-    padding: 12px 18px;
-    text-align: center;
-    font-size: 1rem;
-}
-
-.reg-yes {
-    background: #f0fff4;
-    color: #16a34a;
-}
-
-.reg-no {
-    color: #94a3b8;
-}
-
-.reg-special {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #0066cc;
-}
-
-/* ── CTA ── */
-.reg-cta-section {
-    gap: 14px !important;
-}
-
-.reg-cta-btn {
-    padding: 14px 40px !important;
-    font-size: 1rem !important;
-}
-
-/* ── Mobile ── */
 @media (max-width: 768px) {
-
-    .reg-table thead th,
-    .reg-table-field,
-    .reg-table-val {
-        padding: 10px 10px;
-        font-size: 0.78rem;
-    }
-
-    .reg-detail-flag {
-        font-size: 2.5rem;
-    }
-
-    .reg-tabs {
-        gap: 10px;
-    }
-
-    .reg-tab {
-        padding: 12px 18px;
-        min-width: 90px;
-    }
-}
-
-/* ── Fields section headings ── */
-.reg-fields-heading {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #0a1628;
-    padding: 6px 14px;
-    background: #f8faff;
-    border: 1px solid #e8f0fe;
-    border-radius: 8px;
-    width: 100%;
-}
-
-/* ── Country-specific note ── */
-.reg-country-note {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    background: #fffbeb;
-    border: 1.5px solid #fcd34d;
-    border-radius: 12px;
-    padding: 14px 18px;
-    width: 100%;
-}
-
-.reg-country-note-icon {
-    font-size: 1.2rem;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.reg-country-note p {
-    font-size: 0.88rem;
-    color: #78350f;
-    line-height: 1.7;
-}
-
-/* ── Global disclaimer ── */
-.reg-disclaimer-section {
-    gap: 0 !important;
-}
-
-.reg-global-disclaimer {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    background: #fff3f3;
-    border: 1.5px solid #fca5a5;
-    border-radius: 14px;
-    padding: 18px 22px;
-    width: 100%;
-}
-
-.reg-disclaimer-icon {
-    font-size: 1.4rem;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.reg-global-disclaimer p {
-    font-size: 0.9rem;
-    color: #7f1d1d;
-    line-height: 1.7;
+  .tab-item { flex: 1 1 100%; }
+  .reg-details .col-span-4, .reg-details .col-span-7 { width: 100%; }
+  .ledger-entry { display: flex; flex-direction: column; gap: 12px; }
 }

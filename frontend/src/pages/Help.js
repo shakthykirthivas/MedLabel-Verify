@@ -1,239 +1,204 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Home.css';
-import './Help.css'; // create this file in src/pages/
+import Navbar from '../components/Navbar';
+import './Help.css';
 
 const FAQS = [
   {
     q: 'What is MedLabel Verify?',
-    a: 'MedLabel Verify is a regulatory compliance tool that checks medical device labels against official requirements from 4 countries — USA (FDA), UK (MHRA), India (CDSCO), and Japan (PMDA). You can search a device by name or upload a label image for instant OCR-based analysis.',
+    a: 'MedLabel Verify is a web application for medical device label verification and compliance analysis. It performs OCR-based label scanning, regulatory mark detection, country identification (USA, UK, India, and Japan), and compliance analysis based on country-specific labeling requirements.',
   },
   {
-    q: 'How does the label scan work?',
-    a: 'When you upload or photograph a label, the system uses OCR (Optical Character Recognition) powered by Tesseract to extract text from the image. It then runs regex-based field parsing to identify fields like Device Name, UDI, Lot Number, Expiry Date, and more.',
+    q: 'How does OCR work?',
+    a: 'OCR (Optical Character Recognition) extracts text from uploaded medical device label images or PDFs. The system processes the image, identifies text regions, and parses fields such as Device Name, UDI, Lot Number, Expiry Date, and more.',
   },
   {
     q: 'What image formats are supported?',
-    a: 'You can upload JPG, PNG, and WEBP image files. PDF documents are also supported. For best results, use a clear, well-lit photo with the label text in focus. Avoid blurry, skewed, or low-contrast images.',
+    a: 'You can upload JPG, JPEG, PNG, and PDF files. For best results, use a clear, well-lit, high-resolution image with the label text fully visible and in focus.',
   },
   {
-    q: 'What does the compliance percentage mean?',
-    a: 'The compliance percentage shows how many of a country\'s required label fields were found on your label. 100% means all mandatory fields were detected. Lower percentages indicate missing fields that may cause regulatory issues.',
+    q: 'What does compliance percentage mean?',
+    a: 'The compliance percentage indicates how many of the required labeling fields for a given country are present on the scanned label. It is calculated as: (Number of detected required labels ÷ Total required labels) × 100.',
   },
   {
-    q: 'What is a "Best Match" country?',
-    a: 'The Best Match is the country whose regulatory requirements are most satisfied by the scanned label. It is determined by whichever country has the highest compliance percentage based on the fields found.',
+    q: 'What is a Best Match country?',
+    a: 'The Best Match country is the country whose regulatory requirements are most closely satisfied by the detected label fields. It is the country with the highest compliance percentage among USA, UK, India, and Japan.',
   },
   {
     q: 'What is a UDI?',
-    a: 'UDI stands for Unique Device Identifier. It is a code that uniquely identifies a medical device. It consists of a Device Identifier (DI) and a Production Identifier (PI). UDI is mandatory in the USA, UK, and Japan, and is being phased in for India.',
-  },
-  {
-    q: 'Why are some fields shown as "Not Found"?',
-    a: 'Fields may not be found if the label image is unclear, the text is not in a standard format, or the field genuinely doesn\'t exist on the label. Try the /debug-ocr endpoint to see the raw text extracted from your label and verify OCR quality.',
-  },
-  {
-    q: 'How accurate is the OCR?',
-    a: 'OCR accuracy depends on image quality. Printed labels with clear, high-contrast text in standard fonts achieve the best results. Handwritten labels, embossed text, or heavily styled fonts may produce lower accuracy. Using 300 DPI or higher images is recommended.',
-  },
-  {
-    q: 'Can I check devices not in the search list?',
-    a: 'The search feature covers 15 pre-loaded device types. If your device isn\'t listed, use the upload/scan feature instead — it extracts and scores fields directly from the label image regardless of device type.',
-  },
-  {
-    q: 'Is my uploaded data stored?',
-    a: 'No. Uploaded files are processed in memory and are not saved to disk or any database. The system only retains the extracted text fields for the duration of the request.',
+    a: 'UDI stands for Unique Device Identifier. It is a code that uniquely identifies a medical device and consists of a Device Identifier (DI) and a Production Identifier (PI). It is required by FDA (USA) and PMDA (Japan).',
   },
 ];
 
-const TIPS = [
-  {
-    icon: '💡',
-    title: 'Use good lighting',
-    desc: 'Photograph labels in bright, even lighting. Avoid shadows across the label text.',
-  },
-  {
-    icon: '📐',
-    title: 'Keep the camera straight',
-    desc: 'Hold your camera parallel to the label. Angled shots reduce OCR accuracy significantly.',
-  },
-  {
-    icon: '🔍',
-    title: 'Crop to the label',
-    desc: 'Crop your image so the label fills most of the frame before uploading.',
-  },
-  {
-    icon: '🖨️',
-    title: 'High resolution helps',
-    desc: 'Use 300 DPI or higher for scanned documents. Low-res images miss small text.',
-  },
-  {
-    icon: '📄',
-    title: 'Prefer PDF for documents',
-    desc: 'For digital label documents, export and upload as PDF for cleaner text extraction.',
-  },
-  {
-    icon: '🔬',
-    title: 'Use debug mode',
-    desc: 'Use the /debug-ocr API endpoint to preview raw extracted text before scoring.',
-  },
+const HOW_TO_USE = [
+  { step: '01', title: 'Search a Medical Device', desc: 'Enter a device name in the search bar on the Home page and press Enter or click Search. The system will look up the device and display its regulatory requirements.' },
+  { step: '02', title: 'Upload a Label Image or PDF', desc: 'Use Camera Scan to photograph a label live, Gallery Upload to select an image from your device, or Document Upload to submit a PDF or image file.' },
+  { step: '03', title: 'OCR Extracts Label Information', desc: 'The system uses OCR to automatically extract fields such as Device Name, UDI, Lot Number, Expiry Date, Manufacturer, MAH, Warnings, and more from the uploaded label.' },
+  { step: '04', title: 'System Identifies Country', desc: 'Based on the extracted fields, the system compares the label content against regulatory requirements for USA, UK, India, and Japan to identify the best-matching country.' },
+  { step: '05', title: 'Compliance Percentage is Calculated', desc: 'For each country, the system calculates: Compliance % = (Detected Required Labels ÷ Total Required Labels) × 100 and displays found and missing labels for each jurisdiction.' },
+  { step: '06', title: 'View Missing Labels and Recommendations', desc: 'The Results page shows all found labels, missing labels per country, the compliance percentage, and the best-matching country to help you achieve full regulatory compliance.' },
 ];
 
-const STEPS = [
-  { num: '1', icon: '🔍', title: 'Search or Upload', desc: 'Enter a device name in the search bar or upload a label photo/PDF.' },
-  { num: '2', icon: '👁️', title: 'OCR Extraction', desc: 'The system reads the label using Tesseract OCR and extracts structured fields.' },
-  { num: '3', icon: '⚖️', title: 'Compliance Check', desc: 'Extracted fields are compared against FDA, MHRA, CDSCO, and PMDA requirements.' },
-  { num: '4', icon: '📊', title: 'View Report', desc: 'See compliance scores, missing fields, and best-match country instantly.' },
+const OCR_TIPS = [
+  { icon: '💡', title: 'Use Good Lighting', desc: 'Photograph labels in bright, even lighting. Avoid shadows across the label text as they reduce OCR accuracy significantly.' },
+  { icon: '📐', title: 'Keep Camera Straight', desc: 'Hold your camera parallel to the label surface. Angled shots introduce perspective distortion that reduces text recognition accuracy.' },
+  { icon: '✂️', title: 'Crop the Label', desc: 'Crop the image to show only the label area before uploading. Removing background noise helps the OCR engine focus on relevant content.' },
+  { icon: '🔍', title: 'Use High Resolution', desc: 'Use 300 DPI or higher for scanned documents. Low-resolution images cause small text — such as UDI barcodes and lot numbers — to be missed.' },
+  { icon: '📄', title: 'Prefer PDF for Documents', desc: 'For printed or electronic documents, upload as PDF whenever possible. PDF files preserve text fidelity better than photographed images.' },
 ];
 
 export default function Help() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
 
-  return (
-    <div className="home-wrapper">
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-      {/* Alert Bar */}
-      <div className="home-alert-bar">
-        🏥 Regulatory compliance checker for medical device labels — India · USA · UK · Japan
+  return (
+    <div className="help-site">
+      <div className="utility-bar">
+        User Support Infrastructure &middot; Protocol Support v2.1
       </div>
 
-      {/* Header */}
-      <header className="home-header">
-        <div className="home-logo">
-          <div className="home-logo-cross">✚</div>
-          <div className="home-logo-text-block">
-            <span className="home-logo-title">MedLabel Verify</span>
-            <span className="home-logo-subtitle">Device Label Compliance</span>
-          </div>
-        </div>
-        <nav className="home-nav">
-          <span className="home-nav-item" onClick={() => navigate('/')}>Home</span>
-          <span className="home-nav-item" onClick={() => navigate('/regulations')}>Regulations</span>
-          <span className="home-nav-item active">Help</span>
-        </nav>
-      </header>
+      <Navbar />
 
       {/* Hero */}
-      <section className="home-hero-banner">
-        <div className="home-hero-left">
-          <div className="home-hero-tag">
-            <span className="home-hero-tag-dot" />
-            User Guide & Support
-          </div>
-          <h1 className="home-hero-title">
-            How to Use<br />
-            <span className="home-hero-highlight">MedLabel Verify</span>
-          </h1>
-          <p className="home-hero-desc">
-            Everything you need to get the most out of the compliance checker —
-            from uploading your first label to understanding compliance scores.
-          </p>
-          <div className="home-hero-countries">
-            <div className="home-country-badge">📷 Scan Labels</div>
-            <div className="home-country-badge">🔍 Search Devices</div>
-            <div className="home-country-badge">📊 View Scores</div>
-            <div className="home-country-badge">📋 Export Reports</div>
+      <header className="help-hero py-32 border-b border-hairline-light bg-surface">
+        <div className="swiss-grid">
+          <div className="col-span-8">
+            <span className="text-xs-bold text-accent mb-4 block">Knowledge Base</span>
+            <h1 className="text-h1 mb-8">Institutional<br />Documentation.</h1>
+            <div className="search-frame p-1 border border-text flex mt-12 max-w-2xl bg-white">
+              <input
+                type="text"
+                placeholder="Search documentation — e.g. API, UDI, OCR precision"
+                className="search-input"
+              />
+              <button className="btn-primary">Search</button>
+            </div>
           </div>
         </div>
-        <div className="home-hero-right">
-          <div className="home-hero-card">
-            <div className="home-hero-card-header">🧭 Quick Links</div>
-            {[
-              { label: 'How it works', anchor: '#how-it-works' },
-              { label: 'OCR tips', anchor: '#ocr-tips' },
-              { label: 'FAQs', anchor: '#faqs' },
+      </header>
 
-            ].map(l => (
-              <div key={l.label} className="home-hero-card-row help-quick-link"
-                onClick={() => document.querySelector(l.anchor)?.scrollIntoView({ behavior: 'smooth' })}>
-                <span>{l.label}</span>
-                <span style={{ color: '#0066cc', fontWeight: 700 }}>↓</span>
-              </div>
-            ))}
-            <div className="home-hero-card-footer">Scroll to explore</div>
+      {/* How to Use */}
+      <section className="section-padding border-b border-hairline-light">
+        <div className="swiss-grid mb-20">
+          <div className="col-span-12">
+            <h2 className="text-h2 mb-4">How to Use MedLabel Verify</h2>
+            <p className="text-lead opacity-60">Step-by-step guide to verifying your medical device labels.</p>
           </div>
         </div>
-      </section>
-
-      {/* How it works */}
-      <section className="home-steps-section" id="how-it-works">
-        <h2 className="home-section-title">⚙️ How It Works</h2>
-        <p className="home-section-desc">Four simple steps from label to compliance report</p>
-        <div className="home-steps">
-          {STEPS.map((s, i) => (
-            <React.Fragment key={s.num}>
-              <div className="home-step">
-                <div className="home-step-num">{s.num}</div>
-                <div className="home-step-icon">{s.icon}</div>
-                <div className="home-step-title">{s.title}</div>
-                <div className="home-step-desc">{s.desc}</div>
-              </div>
-              {i < STEPS.length - 1 && <div className="home-step-arrow">→</div>}
-            </React.Fragment>
-          ))}
+        <div className="swiss-grid" style={{ rowGap: '0' }}>
+          <div className="col-span-8 col-start-3">
+            <div className="border-t border-text">
+              {HOW_TO_USE.map((step, i) => (
+                <div key={i} className="border-b border-hairline-light" style={{ padding: '40px 0', display: 'grid', gridTemplateColumns: '80px 1fr', gap: '24px' }}>
+                  <div>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 800,
+                      textTransform: 'uppercase', letterSpacing: '0.2em',
+                      color: 'var(--color-accent)', display: 'block', marginBottom: '8px'
+                    }}>Step</span>
+                    <span style={{
+                      fontFamily: 'var(--font-heading)', fontWeight: 900,
+                      fontSize: '48px', letterSpacing: '-0.04em', color: 'var(--color-text)',
+                      opacity: 0.15, lineHeight: 1
+                    }}>{step.step}</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '24px', marginBottom: '12px', letterSpacing: '-0.02em' }}>
+                      {step.title}
+                    </h3>
+                    <p style={{ fontSize: '16px', lineHeight: 1.7, opacity: 0.65 }}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* OCR Tips */}
-      <section className="home-upload-section" id="ocr-tips">
-        <h2 className="home-section-title">📷 Tips for Better OCR Results</h2>
-        <p className="home-section-desc">Follow these tips to get the most accurate field extraction from your label</p>
-        <div className="help-tips-grid">
-          {TIPS.map(t => (
-            <div key={t.title} className="help-tip-card">
-              <div className="help-tip-icon">{t.icon}</div>
-              <div className="help-tip-title">{t.title}</div>
-              <div className="help-tip-desc">{t.desc}</div>
+      <section className="tips-section py-32 bg-surface">
+        <div className="swiss-grid mb-20">
+          <div className="col-span-12">
+            <h2 className="text-h2 mb-4">OCR Accuracy Tips</h2>
+            <p className="text-lead opacity-60">Optimal surface capture protocols for precision extraction.</p>
+          </div>
+        </div>
+        <div className="swiss-grid">
+          {OCR_TIPS.map((t, i) => (
+            <div key={i} className="col-span-4 protocol-card">
+              <span className="protocol-index">0{i + 1} Protocol</span>
+              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>{t.icon}</div>
+              <h3 className="protocol-title">{t.title}</h3>
+              <p className="protocol-desc">{t.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* FAQs */}
-      <section className="home-search-section help-faq-section" id="faqs">
-        <h2 className="home-section-title">❓ Frequently Asked Questions</h2>
-        <p className="home-section-desc">Answers to the most common questions about MedLabel Verify</p>
-        <div className="help-faq-list">
-          {FAQS.map((faq, i) => (
-            <div key={i} className={`help-faq-item ${openFaq === i ? 'help-faq-open' : ''}`}>
-              <button className="help-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                <span>{faq.q}</span>
-                <span className="help-faq-arrow">{openFaq === i ? '▲' : '▼'}</span>
-              </button>
-              {openFaq === i && (
-                <div className="help-faq-a">{faq.a}</div>
-              )}
+      {/* FAQ */}
+      <section className="faq-section section-padding">
+        <div className="swiss-grid mb-24">
+          <div className="col-span-12">
+            <h2 className="text-h2 mb-4">Frequently Asked Questions</h2>
+            <p className="text-lead opacity-60">Deterministic answers to platform inquiries.</p>
+          </div>
+        </div>
+        <div className="swiss-grid">
+          <div className="col-span-8 col-start-3">
+            <div className="faq-ledger border-t border-text">
+              {FAQS.map((faq, i) => (
+                <div key={i} className="faq-entry border-b border-hairline-light">
+                  <button className="faq-header" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                    <span className="faq-q">{faq.q}</span>
+                    <i className={`ti ti-chevron-${openFaq === i ? 'up' : 'down'}`}></i>
+                  </button>
+                  {openFaq === i && (
+                    <div className="faq-body pb-10">
+                      <p className="faq-a">{faq.a}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </section>
-
-
 
       {/* CTA */}
-      <section className="home-search-section">
-        <h2 className="home-section-title">🚀 Ready to check your label?</h2>
-        <p className="home-section-desc">Go back to the home page and upload or scan your medical device label</p>
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button className="home-search-btn" onClick={() => navigate('/')}>
-            Check a Label →
-          </button>
-          <button className="home-search-btn" style={{ background: '#0a1628' }}
-            onClick={() => navigate('/regulations')}>
-            View Regulations →
-          </button>
+      <section className="cta-section section-padding bg-surface border-t border-hairline-light">
+        <div className="swiss-grid text-center">
+          <div className="col-span-12">
+            <h2 className="text-h2 mb-8">Ready to check your label?</h2>
+            <p className="text-lead opacity-60 mb-12">Return to the core engine to begin verification.</p>
+            <div className="flex justify-center gap-6">
+              <button className="btn-primary" onClick={() => navigate('/')}>Go to Checker</button>
+              <button className="btn-accent" onClick={() => navigate('/regulations')}>View Standards</button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="home-footer">
-        <div className="home-footer-left">
-          <span className="home-footer-logo">✚ MedLabel Verify</span>
-          <span className="home-footer-copy">© 2026 Medical Device Label Compliance Checker</span>
+      <footer className="footer bg-white border-t-2 border-text pt-24 pb-12">
+        <div className="swiss-grid pb-24 border-b border-hairline-light">
+          <div className="col-span-12 text-center">
+            <div className="logo-group inline-flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate('/')}>
+              <div className="wordmark-box small">M</div>
+              <span className="wordmark-text small">MEDLABEL<span className="wordmark-light">VERIFY</span></span>
+            </div>
+            <p className="footer-mini-bio">The institutional standard for medical device compliance.</p>
+            <div className="flex justify-center gap-12 footer-nav-mini">
+              <span onClick={() => navigate('/')}>Home</span>
+              <span onClick={() => navigate('/regulations')}>Standards</span>
+              <span onClick={() => navigate('/help')}>Documentation</span>
+            </div>
+          </div>
         </div>
-        <div className="home-footer-right">
-          <span>CDSCO</span><span>FDA</span><span>MHRA</span><span>PMDA</span>
+        <div className="swiss-grid pt-12">
+          <div className="col-span-12 text-center text-xs-bold opacity-40">
+            &copy; 2026 MedLabel Verify INC. Precision compliance technology.
+          </div>
         </div>
       </footer>
     </div>
