@@ -5,7 +5,6 @@ import './Results.css';
 
 const FULL_NAMES = { USA: 'United States', UK: 'United Kingdom', India: 'India', Japan: 'Japan' };
 
-// ── Country requirements ─────────────────────────────────────────────────────
 const COUNTRY_REQUIREMENTS = {
   USA: ['Device Name', 'Manufacturer', 'UDI', 'Lot Number', 'Expiry Date', 'Warnings', 'Rx Only', 'FDA-compliant labeling'],
   UK: ['Device Name', 'Manufacturer', 'UDI', 'Lot Number', 'Expiry Date', 'Warnings', 'UKCA marking', 'UK Responsible Person'],
@@ -13,7 +12,6 @@ const COUNTRY_REQUIREMENTS = {
   Japan: ['Device Name', 'Manufacturer', 'UDI', 'Lot Number', 'Expiry Date', 'Warnings', 'MAH', 'Japanese-language label'],
 };
 
-// ── Regulatory marks per country ─────────────────────────────────────────────
 const REGULATORY_MARKS = {
   USA: ['UDI', 'Rx Only'],
   UK: ['UKCA', 'UK Responsible Person (UKRP)'],
@@ -21,101 +19,84 @@ const REGULATORY_MARKS = {
   Japan: ['MAH', 'Japanese Labeling'],
 };
 
-// ── Local device database ────────────────────────────────────────────────────
 const DEVICE_DB = {
   'Thermometer': {
-    name: 'Thermometer',
-    category: 'Diagnostic',
+    name: 'Thermometer', category: 'Diagnostic',
     description: 'A medical device used to measure body temperature. Available in digital, infrared, and mercury variants for clinical and home use.',
     image_url: '/images/devices/thermometer.jpg',
   },
   'Syringe': {
-    name: 'Syringe',
-    category: 'Injection Device',
+    name: 'Syringe', category: 'Injection Device',
     description: 'A simple pump consisting of a plunger that fits tightly within a cylindrical tube, used for injecting or withdrawing fluids.',
     image_url: '/images/devices/syringe.jpg',
   },
   'Blood Pressure Monitor': {
-    name: 'Blood Pressure Monitor',
-    category: 'Diagnostic',
+    name: 'Blood Pressure Monitor', category: 'Diagnostic',
     description: 'A medical device used to measure blood pressure, consisting of an inflatable cuff to collapse and release the artery under the cuff in a controlled way.',
-    image_url: '/images/devices/blood-pressure-monitor.jpg',
+    image_url: '/images/devices/blood_pressure_monitor.jpg',
   },
   'Pulse Oximeter': {
-    name: 'Pulse Oximeter',
-    category: 'Monitoring',
-    description: 'A non-invasive method for monitoring a person\'s oxygen saturation and pulse rate. Commonly used for patients in clinical settings.',
-    image_url: '/images/devices/pulse-oximeter.jpg',
+    name: 'Pulse Oximeter', category: 'Monitoring',
+    description: "A non-invasive method for monitoring a person's oxygen saturation and pulse rate. Commonly used for patients in clinical settings.",
+    image_url: '/images/devices/pulse_oximeter.jpg',
   },
   'Stethoscope': {
-    name: 'Stethoscope',
-    category: 'Diagnostic',
+    name: 'Stethoscope', category: 'Diagnostic',
     description: 'An acoustic medical device used for auscultation, for listening to internal sounds of a human or animal body such as heart and breath sounds.',
     image_url: '/images/devices/stethoscope.jpg',
   },
   'Glucometer': {
-    name: 'Glucometer',
-    category: 'Diagnostic',
+    name: 'Glucometer', category: 'Diagnostic',
     description: 'A medical device for determining the concentration of glucose in the blood. Used by patients with diabetes to self-monitor blood glucose levels.',
     image_url: '/images/devices/glucometer.jpg',
   },
   'Nebulizer': {
-    name: 'Nebulizer',
-    category: 'Respiratory',
+    name: 'Nebulizer', category: 'Respiratory',
     description: 'A drug delivery device used to administer medication in the form of a mist inhaled into the lungs, used for treating asthma and COPD.',
     image_url: '/images/devices/nebulizer.jpg',
   },
   'ECG Machine': {
-    name: 'ECG Machine',
-    category: 'Cardiac Monitoring',
+    name: 'ECG Machine', category: 'Cardiac Monitoring',
     description: 'An electrocardiogram machine that records the electrical activity of the heart over a period of time using electrodes placed on the skin.',
-    image_url: '/images/devices/ecg-machine.jpg',
+    image_url: '/images/devices/ecg_machine.jpg',
   },
   'Defibrillator': {
-    name: 'Defibrillator',
-    category: 'Emergency',
+    name: 'Defibrillator', category: 'Emergency',
     description: 'A device that gives a high energy electric shock to the heart through the chest wall to a person in cardiac arrest.',
     image_url: '/images/devices/defibrillator.jpg',
   },
   'Infusion Pump': {
-    name: 'Infusion Pump',
-    category: 'Drug Delivery',
-    description: 'A medical device that delivers fluids, such as nutrients and medications, into a patient\'s body in controlled amounts.',
-    image_url: '/images/devices/infusion-pump.jpg',
+    name: 'Infusion Pump', category: 'Drug Delivery',
+    description: "A medical device that delivers fluids, such as nutrients and medications, into a patient's body in controlled amounts.",
+    image_url: '/images/devices/infusion_pump.jpg',
   },
   'Surgical Mask': {
-    name: 'Surgical Mask',
-    category: 'PPE',
+    name: 'Surgical Mask', category: 'PPE',
     description: 'A loose-fitting, disposable device that creates a physical barrier between the mouth and nose of the wearer and potential contaminants in the immediate environment.',
-    image_url: '/images/devices/surgical-mask.jpg',
+    image_url: '/images/devices/surgical_mask.jpg',
   },
   'Wheelchair': {
-    name: 'Wheelchair',
-    category: 'Mobility Aid',
+    name: 'Wheelchair', category: 'Mobility Aid',
     description: 'A wheeled mobility device in which the user sits, for use by people for whom walking is difficult or impossible due to illness, injury, or disability.',
     image_url: '/images/devices/wheelchair.jpg',
   },
   'Hearing Aid': {
-    name: 'Hearing Aid',
-    category: 'Auditory',
+    name: 'Hearing Aid', category: 'Auditory',
     description: 'A small electronic device worn in or behind the ear to make some sounds louder so a person with hearing loss can listen, communicate, and participate more fully in daily activities.',
-    image_url: '/images/devices/hearing-aid.jpg',
+    image_url: '/images/devices/hearing_aid.jpg',
   },
   'MRI Machine': {
-    name: 'MRI Machine',
-    category: 'Imaging',
+    name: 'MRI Machine', category: 'Imaging',
     description: 'A large tube-shaped machine that uses a magnetic field and radio waves to create detailed images of the organs and tissues within the body.',
-    image_url: '/images/devices/mri-machine.jpg',
+    image_url: '/images/devices/mri_machine.jpg',
   },
   'X-Ray Machine': {
-    name: 'X-Ray Machine',
-    category: 'Imaging',
+    name: 'X-Ray Machine', category: 'Imaging',
     description: 'A medical imaging device that uses X-ray radiation to produce images of the internal structures of the body, primarily bones and dense tissues.',
-    image_url: '/images/devices/x-ray-machine.jpg',
+    image_url: '/images/devices/x_ray_machine.jpg',
   },
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 function calcCompliance(extractedFields) {
   const countries = ['USA', 'UK', 'India', 'Japan'];
   const result = {};
@@ -124,14 +105,8 @@ function calcCompliance(extractedFields) {
 
   countries.forEach(country => {
     const required = COUNTRY_REQUIREMENTS[country];
-    const found = required.filter(f => {
-      const val = extractedFields[f];
-      return val && val.trim();
-    });
-    const missing = required.filter(f => {
-      const val = extractedFields[f];
-      return !val || !val.trim();
-    });
+    const found = required.filter(f => { const val = extractedFields[f]; return val && val.trim(); });
+    const missing = required.filter(f => { const val = extractedFields[f]; return !val || !val.trim(); });
     const percentage = Math.round((found.length / required.length) * 100);
     result[country] = { percentage, found, missing };
     if (percentage > bestPct) { bestPct = percentage; bestMatch = country; }
@@ -140,10 +115,7 @@ function calcCompliance(extractedFields) {
   return { compliance: result, best_match: bestMatch };
 }
 
-// ── OCR simulation: extract fields from filename/type ───────────────────────
 function simulateOCR(file) {
-  // Simulate realistic extraction — return a mix of found/missing fields
-  // to demonstrate the compliance checker. In production this hits a real OCR API.
   const allFields = [
     'Device Name', 'Manufacturer', 'UDI', 'Lot Number',
     'Expiry Date', 'Warnings', 'Storage Conditions', 'MAH',
@@ -151,7 +123,6 @@ function simulateOCR(file) {
     'UKCA marking', 'Manufacturing License No.', 'Import License No.',
     'Japanese-language label', 'FDA-compliant labeling',
   ];
-  // Randomly extract ~60-100% of fields for demo purposes
   const extracted = {};
   const sampleValues = {
     'Device Name': 'MedDevice Pro 3000',
@@ -160,7 +131,7 @@ function simulateOCR(file) {
     'Lot Number': 'LOT-2024-B1234',
     'Expiry Date': '2025-12-01',
     'Warnings': 'For single use only. Do not reuse.',
-    'Storage Conditions': 'Store at 15–25°C. Keep dry.',
+    'Storage Conditions': 'Store at 15-25C. Keep dry.',
     'MAH': 'Japan MedAuth Holdings K.K.',
     'UK Responsible Person': 'UK MedRep Ltd, London, UK',
     'License Numbers': 'MFG-LIC-IN-2023-00142',
@@ -168,13 +139,10 @@ function simulateOCR(file) {
     'UKCA marking': 'UKCA',
     'Manufacturing License No.': 'MFG-2024-00198',
     'Import License No.': 'IMP-2024-00087',
-    'Japanese-language label': '医療機器ラベル v3',
+    'Japanese-language label': 'Medical Device Label v3',
     'FDA-compliant labeling': 'FDA 510(k) Cleared',
   };
-  // Include ~80% of fields
-  allFields.forEach(f => {
-    if (Math.random() > 0.2) extracted[f] = sampleValues[f];
-  });
+  allFields.forEach(f => { if (Math.random() > 0.2) extracted[f] = sampleValues[f]; });
   return extracted;
 }
 
@@ -198,13 +166,10 @@ export default function Results() {
       <div className="utility-bar">
         Internal Audit Protocol 0x8F2A &middot; Confidential Regulatory Output
       </div>
-
       <Navbar />
-
       <main className="results-content">
         {query ? <SearchBlock query={query} /> : <UploadBlock file={file} />}
       </main>
-
       <footer className="footer bg-white border-t-2 border-text pt-24 pb-12">
         <div className="swiss-grid pb-24 border-b border-hairline-light">
           <div className="col-span-12 text-center">
@@ -230,7 +195,6 @@ export default function Results() {
   );
 }
 
-// ── Search Block ─────────────────────────────────────────────────────────────
 function SearchBlock({ query }) {
   const device = DEVICE_DB[query] || DEVICE_DB[
     Object.keys(DEVICE_DB).find(k => k.toLowerCase() === query.toLowerCase())
@@ -242,7 +206,6 @@ function SearchBlock({ query }) {
     );
   }
 
-  const requirements = COUNTRY_REQUIREMENTS;
   const countries = ['USA', 'UK', 'India', 'Japan'];
 
   return (
@@ -285,7 +248,7 @@ function SearchBlock({ query }) {
                 <span className="text-xs-bold">{FULL_NAMES[c]}</span>
               </div>
               <ul className="field-list">
-                {(requirements[c] || []).map((f, i) => (
+                {(COUNTRY_REQUIREMENTS[c] || []).map((f, i) => (
                   <li key={i}><i className="ti ti-check"></i> {f}</li>
                 ))}
               </ul>
@@ -307,13 +270,11 @@ function SearchBlock({ query }) {
   );
 }
 
-// ── Upload Block ─────────────────────────────────────────────────────────────
 function UploadBlock({ file }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try real backend first; fall back to local simulation
     const form = new FormData();
     form.append('file', file);
     fetch('http://localhost:8000/upload', { method: 'POST', body: form })
@@ -323,7 +284,6 @@ function UploadBlock({ file }) {
         setData(json);
       })
       .catch(() => {
-        // Backend unavailable — simulate OCR locally
         const extracted_fields = simulateOCR(file);
         const { compliance, best_match } = calcCompliance(extracted_fields);
         setData({ extracted_fields, compliance, best_match });
@@ -401,7 +361,6 @@ function UploadBlock({ file }) {
         </div>
       </section>
 
-      {/* Compliance Summary per Country */}
       <section className="py-20 border-b border-hairline-light bg-surface">
         <div className="swiss-grid mb-16">
           <div className="col-span-12">
@@ -455,7 +414,6 @@ function UploadBlock({ file }) {
         </div>
       </section>
 
-      {/* Field Verification Ledger */}
       <section className="ledger-section py-32">
         <div className="swiss-grid mb-20">
           <div className="col-span-12">
@@ -494,7 +452,6 @@ function UploadBlock({ file }) {
   );
 }
 
-// ── UI States ─────────────────────────────────────────────────────────────────
 const LoadingScreen = ({ label }) => (
   <div className="swiss-grid pt-48 pb-64">
     <div className="col-span-12 text-center">

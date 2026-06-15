@@ -187,7 +187,7 @@ export default function Home() {
 
           <div className="col-span-5">
             <div className="hero-image-box">
-              <img src="https://images.unsplash.com/photo-1721329567529-b6bc1d93fce2?auto=format&w=800&q=80&fit=crop" alt="Clinical macro scan" />
+              <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&w=800&q=80&fit=crop" alt="Medical device label" />
               <div className="scan-line" id="scan-line"></div>
               <div className="hud-badge">
                 <span className="pulse-dot"></span>
@@ -247,46 +247,16 @@ export default function Home() {
             </div>
           </div>
           {[
-            {
-              title: 'Platform',
-              links: [
-                { label: 'Rules', action: () => navigate('/regulations') },
-                { label: 'API', action: () => { navigate('/help'); setTimeout(() => document.getElementById('help-api')?.scrollIntoView({ behavior: 'smooth' }), 300); } },
-                { label: 'Security', action: () => navigate('/help') },
-              ]
-            },
-            {
-              title: 'Standards',
-              links: [
-                { label: 'FDA', action: () => navigate('/regulations', { state: { country: 'USA' } }) },
-                { label: 'MHRA', action: () => navigate('/regulations', { state: { country: 'UK' } }) },
-                { label: 'CDSCO', action: () => navigate('/regulations', { state: { country: 'India' } }) },
-                { label: 'PMDA', action: () => navigate('/regulations', { state: { country: 'Japan' } }) },
-              ]
-            },
-            {
-              title: 'Company',
-              links: [
-                { label: 'About', action: () => { } },
-                { label: 'Trust', action: () => { } },
-                { label: 'Contact', action: () => navigate('/help') },
-                { label: 'Careers', action: () => { } },
-              ]
-            },
-            {
-              title: 'Legal',
-              links: [
-                { label: 'Privacy', action: () => { } },
-                { label: 'Terms', action: () => { } },
-                { label: 'Audit', action: () => { } },
-              ]
-            },
+            { title: 'Platform', links: [['Rules', '/regulations'], ['API', '/help'], ['Security', '/help']] },
+            { title: 'Standards', links: [['FDA', '/regulations'], ['MHRA', '/regulations'], ['CDSCO', '/regulations'], ['PMDA', '/regulations']] },
+            { title: 'Company', links: [['About', '#'], ['Trust', '#'], ['Contact', '/help'], ['Careers', '#']] },
+            { title: 'Legal', links: [['Privacy', '#'], ['Terms', '#'], ['Audit', '#']] }
           ].map((col, i) => (
             <div key={i} className="col-span-2">
               <h4 className="footer-title">{col.title}</h4>
               <ul className="footer-nav">
-                {col.links.map(({ label, action }, j) => (
-                  <li key={j} onClick={action}>{label}</li>
+                {col.links.map(([label, url], j) => (
+                  <li key={j} onClick={() => url.startsWith('/') ? navigate(url) : (window.location.href = url)}>{label}</li>
                 ))}
               </ul>
             </div>
