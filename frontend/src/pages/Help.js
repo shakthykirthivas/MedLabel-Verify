@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import './Help.css';
 
@@ -49,9 +49,51 @@ const OCR_TIPS = [
 
 export default function Help() {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [openFaq, setOpenFaq] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  useEffect(() => {
+    const { scrollTo } = routerLocation.state || {};
+    if (scrollTo) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.getElementById(scrollTo)?.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+    }
+  }, [routerLocation.state]);
+
+  const doSearch = (q) => {
+    const term = q.trim().toLowerCase();
+    if (!term) { setSearchResults(null); return; }
+
+    const matchedFaqs = FAQS.filter(
+      f => f.q.toLowerCase().includes(term) || f.a.toLowerCase().includes(term)
+    ).map(f => ({ type: 'FAQ', title: f.q, body: f.a }));
+
+    const matchedSteps = HOW_TO_USE.filter(
+      s => s.title.toLowerCase().includes(term) || s.desc.toLowerCase().includes(term)
+    ).map(s => ({ type: 'How To', title: s.title, body: s.desc }));
+
+    const matchedTips = OCR_TIPS.filter(
+      t => t.title.toLowerCase().includes(term) || t.desc.toLowerCase().includes(term)
+    ).map(t => ({ type: 'OCR Tip', title: t.title, body: t.desc }));
+
+    setSearchResults([...matchedFaqs, ...matchedSteps, ...matchedTips]);
+  };
+
+  const handleSearchKey = (e) => {
+    if (e.key === 'Enter') doSearch(searchQuery);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
+  };
 
   return (
     <div className="help-site">
@@ -70,17 +112,60 @@ export default function Help() {
             <div className="search-frame p-1 border border-text flex mt-12 max-w-2xl bg-white">
               <input
                 type="text"
-                placeholder="Search documentation — e.g. API, UDI, OCR precision"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKey}
+                placeholder="Search documentation — e.g. UDI, OCR precision"
                 className="search-input"
               />
-              <button className="btn-primary">Search</button>
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  style={{ padding: '0 12px', fontSize: '18px', opacity: 0.4, background: 'none', border: 'none', cursor: 'pointer' }}
+                >✕</button>
+              )}
+              <button className="btn-primary" onClick={() => doSearch(searchQuery)}>Search</button>
             </div>
+
+            {/* Search Results */}
+            {searchResults !== null && (
+              <div style={{ marginTop: '24px', maxWidth: '672px' }}>
+                {searchResults.length === 0 ? (
+                  <div style={{
+                    padding: '24px', border: '1px solid var(--color-border)',
+                    background: 'white', fontSize: '14px', opacity: 0.6
+                  }}>
+                    No results found for &ldquo;<strong>{searchQuery}</strong>&rdquo;. Try terms like UDI, OCR, FDA, compliance, or lot number.
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.4, marginBottom: '12px' }}>
+                      {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
+                    </p>
+                    {searchResults.map((r, i) => (
+                      <div key={i} style={{
+                        padding: '20px 24px', marginBottom: '8px',
+                        background: 'white', border: '1px solid var(--color-border)',
+                        borderLeft: '3px solid var(--color-accent)'
+                      }}>
+                        <span style={{
+                          fontSize: '10px', fontWeight: 800, textTransform: 'uppercase',
+                          letterSpacing: '0.2em', color: 'var(--color-accent)', display: 'block', marginBottom: '6px'
+                        }}>{r.type}</span>
+                        <p style={{ fontWeight: 700, fontSize: '15px', marginBottom: '6px' }}>{r.title}</p>
+                        <p style={{ fontSize: '13px', opacity: 0.65, lineHeight: 1.6 }}>{r.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       {/* How to Use */}
-      <section className="section-padding border-b border-hairline-light">
+      <section id="how-to-use" className="section-padding border-b border-hairline-light">
         <div className="swiss-grid mb-20">
           <div className="col-span-12">
             <h2 className="text-h2 mb-4">How to Use MedLabel Verify</h2>
@@ -118,7 +203,7 @@ export default function Help() {
       </section>
 
       {/* OCR Tips */}
-      <section className="tips-section py-32 bg-surface">
+      <section id="ocr-tips" className="tips-section py-32 bg-surface">
         <div className="swiss-grid mb-20">
           <div className="col-span-12">
             <h2 className="text-h2 mb-4">OCR Accuracy Tips</h2>
@@ -138,7 +223,7 @@ export default function Help() {
       </section>
 
       {/* FAQ */}
-      <section className="faq-section section-padding">
+      <section id="faq" className="faq-section section-padding">
         <div className="swiss-grid mb-24">
           <div className="col-span-12">
             <h2 className="text-h2 mb-4">Frequently Asked Questions</h2>

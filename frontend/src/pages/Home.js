@@ -115,7 +115,7 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Block */}
-      <header className="hero section-padding">
+      <header className="hero section-padding" style={{ paddingTop: '48px' }}>
         <div className="swiss-grid items-center">
           <div className="col-span-7">
             <div className="mb-8 flex items-center gap-3 hero-reveal">
@@ -163,13 +163,13 @@ export default function Home() {
 
             {/* Upload Options */}
             <div className="flex items-center gap-4 hero-reveal" style={{ marginTop: '24px' }}>
-              <button className="btn-primary" onClick={handleCamera}>
+              <button className="btn-accent" onClick={handleCamera}>
                 <i className="ti ti-camera" style={{ marginRight: '8px' }}></i>Camera Scan
               </button>
               <button className="btn-accent" onClick={() => imageInputRef.current.click()}>
                 <i className="ti ti-photo" style={{ marginRight: '8px' }}></i>Gallery Upload
               </button>
-              <button className="btn-accent secondary" onClick={() => pdfInputRef.current.click()}>
+              <button className="btn-accent" onClick={() => pdfInputRef.current.click()}>
                 <i className="ti ti-file-text" style={{ marginRight: '8px' }}></i>Document Upload
               </button>
             </div>
@@ -187,7 +187,7 @@ export default function Home() {
 
           <div className="col-span-5">
             <div className="hero-image-box">
-              <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&w=800&q=80&fit=crop" alt="Medical device label" />
+              <img src="/images/hero-label.jpg" alt="Medical device label scan" />
               <div className="scan-line" id="scan-line"></div>
               <div className="hud-badge">
                 <span className="pulse-dot"></span>
@@ -212,7 +212,7 @@ export default function Home() {
               <div className="spine-progress" ref={progressRef}></div>
             </div>
             {[
-              { phase: '01', title: 'Ingestion & Pre-processing', desc: 'Native PDF or high-resolution imagery is ingested via encrypted API. Multi-spectrum noise reduction ensures clinical-grade legibility.' },
+              { phase: '01', title: 'Ingestion & Pre-processing', desc: 'Native PDF or high-resolution imagery is ingested via encrypted channel. Multi-spectrum noise reduction ensures clinical-grade legibility.' },
               { phase: '02', title: 'Parameter Extraction', desc: 'Proprietary vision models extract device names, manufacturer details, lot numbers, and symbols with 99.9% accuracy.' },
               { phase: '03', title: 'Regulatory Cross-Check', desc: 'Extracted data points are compared against a real-time updated library of 24,000+ national regulatory requirements.' },
               { phase: '04', title: 'Compliance Certification', desc: 'A cryptographically signed compliance report is generated, detailing specific passes or flags for each target jurisdiction.' }
@@ -242,21 +242,50 @@ export default function Home() {
               The institutional standard for medical device label verification and regulatory compliance automation.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="social-link"><i className="ti ti-brand-linkedin"></i></a>
-              <a href="#" className="social-link"><i className="ti ti-brand-x"></i></a>
+              <button className="social-link"><i className="ti ti-brand-linkedin"></i></button>
+              <button className="social-link"><i className="ti ti-brand-x"></i></button>
             </div>
           </div>
           {[
-            { title: 'Platform', links: [['Rules', '/regulations'], ['API', '/help'], ['Security', '/help']] },
-            { title: 'Standards', links: [['FDA', '/regulations'], ['MHRA', '/regulations'], ['CDSCO', '/regulations'], ['PMDA', '/regulations']] },
-            { title: 'Company', links: [['About', '#'], ['Trust', '#'], ['Contact', '/help'], ['Careers', '#']] },
-            { title: 'Legal', links: [['Privacy', '#'], ['Terms', '#'], ['Audit', '#']] }
+            {
+              title: 'Platform',
+              links: [
+                { label: 'Rules', action: () => navigate('/regulations', { state: { scrollTo: 'reg-details' } }) },
+                { label: 'Security', action: () => navigate('/help', { state: { scrollTo: 'faq' } }) },
+              ]
+            },
+            {
+              title: 'Standards',
+              links: [
+                { label: 'FDA', action: () => navigate('/regulations', { state: { country: 'USA', scrollTo: 'reg-details' } }) },
+                { label: 'MHRA', action: () => navigate('/regulations', { state: { country: 'UK', scrollTo: 'reg-details' } }) },
+                { label: 'CDSCO', action: () => navigate('/regulations', { state: { country: 'India', scrollTo: 'reg-details' } }) },
+                { label: 'PMDA', action: () => navigate('/regulations', { state: { country: 'Japan', scrollTo: 'reg-details' } }) },
+              ]
+            },
+            {
+              title: 'Resources',
+              links: [
+                { label: 'Regulations', action: () => navigate('/regulations', { state: { scrollTo: 'country-tabs' } }) },
+                { label: 'OCR Tips', action: () => navigate('/help', { state: { scrollTo: 'ocr-tips' } }) },
+                { label: 'FAQ', action: () => navigate('/help', { state: { scrollTo: 'faq' } }) },
+                { label: 'Debug OCR', action: () => navigate('/help', { state: { scrollTo: 'ocr-tips' } }) },
+              ]
+            },
+            {
+              title: 'Support',
+              links: [
+                { label: 'How It Works', action: () => navigate('/help', { state: { scrollTo: 'how-to-use' } }) },
+                { label: 'Documentation', action: () => navigate('/help') },
+                { label: 'Contact', action: () => navigate('/help', { state: { scrollTo: 'faq' } }) },
+              ]
+            },
           ].map((col, i) => (
             <div key={i} className="col-span-2">
               <h4 className="footer-title">{col.title}</h4>
               <ul className="footer-nav">
-                {col.links.map(([label, url], j) => (
-                  <li key={j} onClick={() => url.startsWith('/') ? navigate(url) : (window.location.href = url)}>{label}</li>
+                {col.links.map(({ label, action }, j) => (
+                  <li key={j} onClick={action}>{label}</li>
                 ))}
               </ul>
             </div>

@@ -38,85 +38,165 @@ def extract_text(file_bytes: bytes, content_type: str) -> str:
 
 def parse_fields(raw_text: str) -> dict:
     text = raw_text.strip()
-    t = re.sub(r'[|}{]', ' ', text)
+    # Normalise OCR noise but preserve newlines for boundary detection
+    t = re.sub(r'[|}{@]', ' ', text)
+    t = re.sub(r'[ \t]+', ' ', t)   # collapse spaces/tabs only, keep newlines
 
-    # Device Name
+    # ── Device Name ──────────────────────────────────────────────────────────
     device_name = _f(t, r"(?:device\s*name|product\s*name)[:\-]?\s*(.+)")
     if not device_name:
-        device_name = _f(t, r"(Ultra[\w\s]+(?:Device|Implantable|Medical)[\w\s]*)")
+        # REF symbol (ISO 5.1.6) — catalogue/model number on same line
+        device_name = _f(t, r"REF\s+([A-Za-z0-9][A-Za-z0-9\s\-\/]{2,40})")
     if not device_name:
-        device_name = _f(t, r"((?:POLYMED|POLY|OMRON|PHILIPS|SIEMENS|GE|BD|BECTON)\s+[\w\s]+)")
+        # Brand + product keyword on one line e.g. "POLYMED NEBULIZER MASK"
+        device_name = _f(t, r"^((?:POLYMED|OMRON|PHILIPS|SIEMENS|GE|BD|BECTON|MEDTRONIC|ABBOTT|STRYKER)\s+[A-Z][A-Z\s\-]{3,50})$", multiline=True)
     if not device_name:
         device_name = _first_line(t)
 
-    # Manufacturer
-    manufacturer = _f(t, r"(?:manufacturer|mfr|made\s*by|mfg\s*by)[:\-]?\s*(.+)")
+    # ── Manufacturer ─────────────────────────────────────────────────────────
+    # Strategy: match text immediately after manufacturer keyword OR
+    # match "WORD MEDICURE/MEDICAL/etc. LTD." pattern — but STOP at address keywords
+    # Address keywords: Plot, Sector, Street, Road, No., Village, Phase, Block, Pin
+    ADDRESS_STOP = r"(?=\s*(?:plot|sector|street|road|village|phase|block|pin\s*\d|p\.o\.|dist\.|p\.s\.|hsiidc|industrial|area|bahadur|faridabad|haryana|india|\d{6}))"
+
+    manufacturer = _f(t, r"(?:manufacturer|mfr\.?|made\s*by|mfg\.?\s*by|manufactured\s*by)[:\-]?\s*([A-Z][\w\s\.,\-&]+?(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|HEALTHCARE|SURGICAL|BIOTECH)\.?)" )
     if not manufacturer:
-        manufacturer = _f(t, r"([\w\s]+(?:LTD|LLC|INC|CORP|PVT\.?\s*LTD|CO|MEDICURE|MEDTECH|MEDICAL|GlobalMed)[\.]*)")
+        # Direct match: company name ending in LTD/MEDICURE etc., stop before address
+        manufacturer = _f(t, r"((?:[A-Z][A-Z\s&\-]{2,40}?\s+)(?:LTD\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDICAL|HEALTHCARE|SURGICAL)\.?)" + ADDRESS_STOP)
+    if not manufacturer:
+        manufacturer = _f(t, r"([\w][\w\s\-\.,]+(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|GlobalMed)\.?)")
 
-    # UDI
-    udi = _f(t, r"(?:^|\s)UDI[:\-]?\s*([A-Za-z0-9\-\/\(\)\s]+)")
+    # ── UDI ──────────────────────────────────────────────────────────────────
+    # GS1 strict: (01) + 14 digits, optionally followed by (17)YYMMDD and (10)lot
+    udi = _f(t, r"(?:^|\s)UDI[:\-]?\s*(\(01\)[0-9]{8,}(?:\([0-9]+\)[A-Za-z0-9\-]+)*)")
     if not udi:
-        udi = _f(t, r"(\(01\)\s*[0-9]+(?:\s*\([0-9]+\)\s*[A-Za-z0-9]+)*)")
+        # Full GS1 string starting with (01) — require at least 8 digits after (01)
+        udi = _f(t, r"(\(01\)[0-9]{8,14}(?:\s*\([0-9]{2}\)[A-Za-z0-9\-]+)*)")
     if not udi:
-        udi = _f(t, r"([0-9]{10,}(?:\s*[0-9]+)*)")
+        udi = _f(t, r"(\+[A-Za-z0-9\/\-]{6,})")   # HIBC format
+    if not udi:
+        udi = _f(t, r"([0-9]{14})")                # bare GTIN-14
 
-    # Lot Number
-    lot = _f(t, r"LOT\s*[:\-]?\s*([A-Za-z0-9\-]+)")
+    # ── Lot Number ───────────────────────────────────────────────────────────
+    # ISO 5.1.5 LOT symbol box — OCR reads LOT directly; also GS1 AI (10)
+    lot = _f(t, r"\bLOT\s*[:\-]?\s*([A-Za-z0-9\-]{3,20})\b")
     if not lot:
-        lot = _f(t, r"(?:lot|batch)\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Za-z0-9\-]+)")
+        lot = _f(t, r"(?:lot|batch)\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Za-z0-9\-]{3,20})")
     if not lot:
-        lot = _f(t, r"\(10\)\s*([A-Za-z0-9\-]+)")
+        lot = _f(t, r"\(10\)\s*([A-Za-z0-9\-]{3,20})")
 
-    # Expiry Date
-    expiry = _f(t, r"(\d{4}[\/\-\.]\d{2}[\/\-\.]\d{2})")
+    # ── Expiry Date ──────────────────────────────────────────────────────────
+    expiry = _f(t, r"(?:use[\s\-]*by|expiry|expiration|exp\.?)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})")
     if not expiry:
-        expiry = _f(t, r"(?:exp(?:iry|\.)?|use\s*by|expiration)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})")
+        expiry = _f(t, r"(\d{4}[\/\-\.]\d{2}[\/\-\.]\d{2})")
     if not expiry:
-        expiry = _f(t, r"\(17\)\s*(\d{6,8})")
+        expiry = _f(t, r"(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})")
+    if not expiry:
+        # GS1 AI (17) YYMMDD → convert to 20YY-MM-DD
+        raw_gs1 = _f(t, r"\(17\)\s*(\d{6})")
+        if raw_gs1 and len(raw_gs1) == 6:
+            expiry = f"20{raw_gs1[0:2]}-{raw_gs1[2:4]}-{raw_gs1[4:6]}"
+        elif raw_gs1:
+            expiry = raw_gs1
+    if not expiry:
+        expiry = _f(t, r"(\d{1,2}[\/\-]\d{4})")
 
-    # Warnings
-    warnings = _f(t, r"(?:warning|caution)[:\-]?\s*(.{5,150})")
-    if not warnings:
-        warnings = _f(t, r"(Do\s*Not\s*Reuse|Single\s*Use|Not\s*made\s*with)")
-    if not warnings:
-        warnings = _f(t, r"((?:not\s*made|do\s*not|single\s*use|sterile).{5,100})")
+    # ── Warnings ─────────────────────────────────────────────────────────────
+    # ONLY match actual warning/safety phrases — never addresses or company info
+    # Order: explicit warning keyword → STERILE symbol → known safety phrases
+    warnings_parts = []
 
-    # Storage
-    storage = _f(t, r"(?:storage|store\s*(?:at|between|below)|keep\s*(?:at|below|between|dry))[:\-]?\s*(.+)")
+    # Explicit warning/caution label
+    w1 = _f(t, r"(?:warning|caution)[:\-]\s*(.{5,200}?)(?:\n|$)")
+    if w1:
+        warnings_parts.append(w1.strip())
+
+    # ISO 5.2.x STERILE symbol text
+    sterile = _f(t, r"\b(STERILE(?:\s*(?:A|EO|R))?)\b")
+    if sterile:
+        warnings_parts.append(sterile)
+
+    # "Not made with natural rubber latex" — common on Indian labels
+    latex = _f(t, r"(Not\s+made\s+with\s+natural\s+rubber\s+latex[^\.]*\.?)")
+    if latex:
+        warnings_parts.append(latex.strip())
+
+    # "Not made with DEHP plasticizers"
+    dehp = _f(t, r"(Not\s+made\s+with\s+(?:DEHP|di[\-\s]?2[\-\s]?ethylhexyl)[^\.]*\.?)")
+    if dehp:
+        warnings_parts.append(dehp.strip())
+
+    # Single use / Do not reuse
+    single = _f(t, r"((?:Single\s+Use\s+Only|Do\s+Not\s+Re[\-]?[Uu]se|For\s+Single\s+Use))")
+    if single:
+        warnings_parts.append(single)
+
+    # Consult IFU
+    ifu = _f(t, r"(Consult\s+Instructions?\s+for\s+Use)")
+    if ifu:
+        warnings_parts.append(ifu)
+
+    warnings = "; ".join(warnings_parts) if warnings_parts else None
+
+    # ── Storage Conditions ───────────────────────────────────────────────────
+    storage = _f(t, r"(?:storage|store\s*(?:at|between|below)|keep\s*(?:at|below|between))[:\-]?\s*(.+?)(?:\n|$)")
+    if not storage:
+        # Umbrella symbol → Keep Dry
+        storage = _f(t, r"\b([Kk]eep\s+[Dd]ry|[Ss]tore\s+in\s+a?\s*dry\s+place|[Pp]rotect\s+from\s+moisture)\b")
+    if not storage:
+        # Temperature range e.g. "15°C to 25°C"
+        storage = _f(t, r"(-?\d+\s*[°℃]?\s*C\s*(?:to|[-–])\s*-?\d+\s*[°℃]?\s*C)")
     if not storage:
         storage = _f(t, r"(\d+\s*[°]?\s*C(?:\s*max)?)")
 
-    # MAH
-    mah = _f(t, r"(?:mah|marketing\s*auth(?:orization)?\s*holder)[:\-]?\s*(.+)")
+    # ── MAH ──────────────────────────────────────────────────────────────────
+    mah = _f(t, r"(?:mah|marketing\s*auth(?:ori[sz]ation)?\s*holder)[:\-]?\s*(.+?)(?:\n|$)")
     if not mah:
         mah = _f(t, r"(?:販売|製造|認証)[^\n]*")
 
-    # UK Responsible Person
-    uk_rep = _f(t, r"(?:uk\s*responsible\s*person|uk\s*rep(?:resentative)?|ukrp)[:\-]?\s*(.+)")
+    # ── UK Responsible Person ─────────────────────────────────────────────────
+    # ISO 5.1.2 EC REP symbol
+    uk_rep = _f(t, r"(?:uk\s*responsible\s*person|uk\s*rep(?:resentative)?|ukrp)[:\-]?\s*(.+?)(?:\n|$)")
     if not uk_rep:
-        uk_rep = _f(t, r"EC\s*REP[:\-]?\s*(.+)")
+        uk_rep = _f(t, r"EC\s*REP[:\-]?\s*(.+?)(?:\n|$)")
+    if not uk_rep:
+        uk_rep = _f(t, r"(?:authoris(?:ed|ed)\s*representative)[:\-]?\s*(.+?)(?:\n|$)")
 
-    # License Numbers
-    license_no = _f(t, r"(?:lic(?:ense)?\s*no\.?|mfg\/imp\s*lic|MFG\/MD)[:\-]?\s*([A-Za-z0-9\/\-]+)")
+    # ── License Numbers ───────────────────────────────────────────────────────
+    # Indian labels: "Mfg. Lic. No.: M/2019/000147" or "MFG/MD/2013/020147"
+    license_no = _f(t, r"(?:mfg\.?\s*lic(?:ense|ence)?\.?\s*no\.?|manufacturing\s*licen[cs]e\s*(?:no\.?)?)[:\-]?\s*([A-Za-z0-9\/\-\.]{5,30})")
     if not license_no:
-        license_no = _f(t, r"(?:CDSCO|MDL|MFG|IMP)\s*[:\-]?\s*([A-Za-z0-9\/\-]+)")
+        license_no = _f(t, r"(?:imp(?:ort)?\s*lic(?:ense|ence)?\.?\s*no\.?)[:\-]?\s*([A-Za-z0-9\/\-\.]{5,30})")
+    if not license_no:
+        license_no = _f(t, r"(?:MFG\/MD|MFG\/IMP)[\/\s]*([0-9]{4}\/[0-9]{6})")
+    if not license_no:
+        license_no = _f(t, r"(?:lic(?:ense|ence)?\s*no\.?)[:\-]?\s*([A-Za-z0-9\/\-\.]{5,30})")
+    if not license_no:
+        license_no = _f(t, r"(?:CDSCO|MDL)\s*[:\-]?\s*([A-Za-z0-9\/\-]{5,30})")
+    if not license_no:
+        # Direct Indian license number pattern: Letter/YYYY/NNNNNN
+        license_no = _f(t, r"\b([A-Z]\/\d{4}\/\d{6})\b")
+    if not license_no:
+        # MFG/MD/YYYY/NNNNNN pattern
+        license_no = _f(t, r"\b((?:ML|MFG|IMP)\s*[\/\s]\s*(?:NFGIMD|NFGMD|MD|IMP)?[\/\s]\s*\d{4}[\/\s]\d{6})\b")
 
-    # Rx Only
-    rx_only = _f(t, r"(R\s*ONLY|Rx\s*Only|prescription\s*only|federal\s*law)")
+    # ── Rx Only ──────────────────────────────────────────────────────────────
+    rx_only = _f(t, r"\b(Rx\s*Only|R\s*[xX]\s*Only)\b")
+    if not rx_only:
+        rx_only = _f(t, r"(prescription\s*only|federal\s*law\s*restricts)")
 
     fields = {
-        "Device Name": device_name,
-        "Manufacturer": manufacturer,
-        "UDI": udi,
-        "Lot Number": lot,
-        "Expiry Date": expiry,
-        "Warnings": warnings,
-        "Storage Conditions": storage,
-        "MAH": mah,
+        "Device Name":           device_name,
+        "Manufacturer":          manufacturer,
+        "UDI":                   udi,
+        "Lot Number":            lot,
+        "Expiry Date":           expiry,
+        "Warnings":              warnings,
+        "Storage Conditions":    storage,
+        "MAH":                   mah,
         "UK Responsible Person": uk_rep,
-        "License Numbers": license_no,
-        "Rx Only": rx_only,
+        "License Numbers":       license_no,
+        "Rx Only":               rx_only,
     }
 
     return {k: (v.strip() if isinstance(v, str) else None) for k, v in fields.items()}
@@ -148,10 +228,11 @@ def _pil_to_bytes(img) -> bytes:
     return buf.getvalue()
 
 
-def _f(text: str, pattern: str):
+def _f(text: str, pattern: str, multiline: bool = False):
     """Safe regex search — always returns string or None."""
     try:
-        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+        flags = re.IGNORECASE | re.MULTILINE if multiline else re.IGNORECASE
+        match = re.search(pattern, text, flags)
         if match:
             result = match.group(1)
             if isinstance(result, str):

@@ -2,7 +2,9 @@
   --color-hairline: rgba(42, 52, 57, 0.1);
 }
 
-.hidden { display: none; }
+.hidden {
+  display: none;
+}
 
 /* Sticky Nav */
 .masthead {
@@ -100,14 +102,14 @@
   border: 1px solid var(--color-hairline);
   padding: 16px;
   background: white;
-  visibility: hidden; /* GSAP will reveal */
+  visibility: hidden;
+  /* GSAP will reveal */
 }
 
 .hero-image-box img {
   width: 100%;
   height: 600px;
   object-fit: cover;
-  filter: grayscale(1) contrast(1.1);
 }
 
 .scan-line {
@@ -148,9 +150,20 @@
 }
 
 @keyframes pulse-kf {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.6); opacity: 0.4; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Marquee */
@@ -174,13 +187,33 @@
 
 /* Ledger */
 .ledger-row {
-  visibility: hidden; /* GSAP will reveal */
+  visibility: hidden;
+  /* GSAP will reveal */
 }
 
-.ledger-id { font-family: var(--font-mono); font-size: 13px; opacity: 0.5; }
-.ledger-title { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
-.ledger-param { font-size: 14px; opacity: 0.6; font-weight: 500; }
-.ledger-metric { font-weight: 800; font-size: 28px; letter-spacing: -0.04em; }
+.ledger-id {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  opacity: 0.5;
+}
+
+.ledger-title {
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.ledger-param {
+  font-size: 14px;
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.ledger-metric {
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
 
 /* Timeline */
 .spine {
@@ -240,14 +273,20 @@
   align-items: flex-end;
 }
 
-.bar { 
+.bar {
   width: 100%;
-  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1); 
+  transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: bottom;
 }
 
-.bar.manual { background-color: var(--color-text); opacity: 0.15; }
-.bar.mlv { background-color: var(--color-accent); }
+.bar.manual {
+  background-color: var(--color-text);
+  opacity: 0.15;
+}
+
+.bar.mlv {
+  background-color: var(--color-accent);
+}
 
 .bar-label {
   position: absolute;
@@ -261,12 +300,12 @@
   letter-spacing: 0.15em;
 }
 
-.metric-tile { 
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+.metric-tile {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.metric-tile:hover { 
-  background-color: white; 
+.metric-tile:hover {
+  background-color: white;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
 }
 
@@ -280,7 +319,10 @@
   color: rgba(var(--color-text-rgb), 0.4);
 }
 
-.footer-nav { list-style: none; }
+.footer-nav {
+  list-style: none;
+}
+
 .footer-nav li {
   margin-bottom: 14px;
   font-size: 14px;
@@ -290,7 +332,11 @@
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.footer-nav li:hover { opacity: 1; color: var(--color-accent); transform: translateX(4px); }
+.footer-nav li:hover {
+  opacity: 1;
+  color: var(--color-accent);
+  transform: translateX(4px);
+}
 
 .social-link {
   width: 44px;
@@ -338,19 +384,57 @@
   background-color: var(--color-surface);
 }
 
-.modal-video { width: 100%; height: auto; display: block; border: 1px solid var(--color-hairline); }
+.modal-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--color-hairline);
+}
 
-.modal-footer { padding: 32px; display: flex; justify-content: center; gap: 24px; background-color: var(--color-surface); }
+.modal-footer {
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  background-color: var(--color-surface);
+}
 
 @media (max-width: 1024px) {
-  .hero-image-box img { height: 400px; }
-  .text-h1 { font-size: 56px; }
+  .hero-image-box img {
+    height: 400px;
+  }
+
+  .text-h1 {
+    font-size: 56px;
+  }
 }
 
 @media (max-width: 768px) {
-  .swiss-grid { display: flex; flex-direction: column; gap: 40px; }
-  .col-span-7, .col-span-5, .col-span-6, .col-span-4, .col-span-3 { width: 100%; }
-  .ledger-row { display: flex; flex-direction: column; gap: 10px; }
-  .ledger-header { display: none; }
-  .timeline-step { padding-left: 60px; }
+  .swiss-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .col-span-7,
+  .col-span-5,
+  .col-span-6,
+  .col-span-4,
+  .col-span-3 {
+    width: 100%;
+  }
+
+  .ledger-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ledger-header {
+    display: none;
+  }
+
+  .timeline-step {
+    padding-left: 60px;
+  }
 }

@@ -152,20 +152,24 @@ const MATRIX_ROWS = [
 
 export default function Regulations() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [active, setActive] = useState(location.state?.country || 'USA');
+  const [active, setActive] = useState('USA');
   const reg = REGULATIONS.find(r => r.country === active);
+  const routerLocation = useLocation();
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // When navigated here with a country in state, switch to it
-  useEffect(() => {
-    if (location.state?.country) {
-      setActive(location.state.country);
+    const { country, scrollTo } = routerLocation.state || {};
+    if (country) setActive(country);
+    if (scrollTo) {
+      // Wait for the page to fully paint before scrolling
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.getElementById(scrollTo)?.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
     }
-  }, [location.state]);
+  }, [routerLocation.state]);
 
   return (
     <div className="reg-site">
@@ -189,7 +193,7 @@ export default function Regulations() {
       </header>
 
       {/* Country Tabs */}
-      <section className="reg-selection py-20 border-b border-hairline-light">
+      <section id="country-tabs" className="reg-selection py-20 border-b border-hairline-light">
         <div className="swiss-grid">
           <div className="col-span-12">
             <div className="country-tabs">
@@ -209,7 +213,7 @@ export default function Regulations() {
       </section>
 
       {/* Details */}
-      <section className="reg-details section-padding">
+      <section id="reg-details" className="reg-details section-padding">
         <div className="swiss-grid mb-24">
           <div className="col-span-4">
             <span className="text-xs-bold text-accent mb-2 block">Authority Metadata</span>
@@ -298,36 +302,32 @@ export default function Regulations() {
       </section>
 
       {/* Cross-Jurisdiction Matrix */}
-      <section className="reg-matrix py-32" style={{ backgroundColor: '#f0f0f0' }}>
+      <section className="reg-matrix py-32" style={{ backgroundColor: '#F0F2F4', color: 'var(--color-text)' }}>
         <div className="swiss-grid mb-20">
           <div className="col-span-6">
-            <h2 className="text-h2 mb-6" style={{ color: '#0a0a0a' }}>Cross-Jurisdiction Matrix</h2>
-            <p className="text-lead" style={{ color: '#0a0a0a', opacity: 0.6 }}>Global alignment of mandatory labeling fields across 4 national frameworks.</p>
+            <h2 className="text-h2 mb-6">Cross-Jurisdiction Matrix</h2>
+            <p className="text-lead opacity-60">Global alignment of mandatory labeling fields across 4 national frameworks.</p>
           </div>
         </div>
         <div className="swiss-grid mb-20">
           <div className="col-span-12 overflow-x-auto">
-            <table className="matrix-ledger w-full border-collapse" style={{ color: '#0a0a0a' }}>
+            <table className="matrix-ledger w-full border-collapse">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(10,10,10,0.15)' }}>
-                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Parameter Name</th>
-                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>USA</th>
-                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>UK</th>
-                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>INDIA</th>
-                  <th className="py-6 text-center text-xs-bold" style={{ color: '#0a0a0a' }}>JAPAN</th>
+                <tr className="border-b border-text/20">
+                  <th className="py-6 text-left text-xs-bold opacity-30">Parameter Name</th>
+                  <th className="py-6 text-center text-xs-bold">USA</th>
+                  <th className="py-6 text-center text-xs-bold">UK</th>
+                  <th className="py-6 text-center text-xs-bold">INDIA</th>
+                  <th className="py-6 text-center text-xs-bold">JAPAN</th>
                 </tr>
               </thead>
               <tbody>
                 {MATRIX_ROWS.map(([f, ...vals], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(10,10,10,0.08)', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <td className="py-6 font-bold" style={{ color: '#0a0a0a' }}>{f}</td>
+                  <tr key={i} className="border-b border-hairline-light hover:bg-white transition-all">
+                    <td className="py-6 font-bold">{f}</td>
                     {vals.map((v, j) => (
                       <td key={j} className="py-6 text-center text-2xl">
-                        {v
-                          ? <i className="ti ti-check" style={{ color: 'var(--color-accent)' }}></i>
-                          : <i className="ti ti-minus" style={{ color: '#0a0a0a', opacity: 0.2 }}></i>}
+                        {v ? <i className="ti ti-check text-accent"></i> : <i className="ti ti-minus opacity-20"></i>}
                       </td>
                     ))}
                   </tr>
@@ -340,13 +340,13 @@ export default function Regulations() {
         {/* Comparison Summary Table */}
         <div className="swiss-grid">
           <div className="col-span-12">
-            <h3 className="text-xs-bold mb-10" style={{ color: 'rgba(10,10,10,0.5)' }}>Authority Comparison Summary</h3>
-            <table className="matrix-ledger w-full border-collapse" style={{ color: '#0a0a0a' }}>
+            <h3 className="text-xs-bold mb-10" style={{ color: 'rgba(42,52,57,0.4)' }}>Authority Comparison Summary</h3>
+            <table className="matrix-ledger w-full border-collapse">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(10,10,10,0.15)' }}>
-                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Country</th>
-                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Regulatory Mark</th>
-                  <th className="py-6 text-left text-xs-bold" style={{ color: '#0a0a0a', opacity: 0.5 }}>Unique Requirement</th>
+                <tr className="border-b border-hairline-light">
+                  <th className="py-6 text-left text-xs-bold opacity-30">Country</th>
+                  <th className="py-6 text-left text-xs-bold opacity-30">Regulatory Mark</th>
+                  <th className="py-6 text-left text-xs-bold opacity-30">Unique Requirement</th>
                 </tr>
               </thead>
               <tbody>
@@ -356,12 +356,10 @@ export default function Regulations() {
                   ['India', 'License Numbers, CDSCO', 'Hindi labeling required for retail; CDSCO registration mandatory'],
                   ['Japan', 'MAH', 'Full Japanese-language labeling and PMDA MAH license required'],
                 ].map(([country, mark, req], i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(10,10,10,0.08)', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <td className="py-6 font-bold" style={{ color: '#0a0a0a' }}>{country}</td>
+                  <tr key={i} className="border-b border-hairline-light hover:bg-white transition-all">
+                    <td className="py-6 font-bold">{country}</td>
                     <td className="py-6" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{mark}</td>
-                    <td className="py-6 text-sm" style={{ color: '#0a0a0a', opacity: 0.65 }}>{req}</td>
+                    <td className="py-6 opacity-60 text-sm">{req}</td>
                   </tr>
                 ))}
               </tbody>
