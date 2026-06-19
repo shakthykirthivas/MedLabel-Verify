@@ -153,8 +153,12 @@ def score_all_countries(extracted_fields: dict) -> dict:
     return {country: score_compliance(extracted_fields, country) for country in COUNTRY_RULES}
 
 
-def best_match(scores: dict) -> str:
-    """Return the country with the highest compliance percentage."""
+def best_match(scores: dict, extracted_fields: dict = None) -> str:
+    """Return the country with the highest compliance percentage, or priority rule."""
+    if extracted_fields:
+        priority = classify_country_priority(extracted_fields)
+        if priority:
+            return priority
     return max(scores, key=lambda c: scores[c]["percentage"])
 
 
@@ -169,7 +173,9 @@ def classify_country_priority(extracted_fields: dict) -> str:
     """
     if extracted_fields.get("UKCA Mark"):
         return "UK"
-    if extracted_fields.get("MAH"):
+    
+    manufacturer = str(extracted_fields.get("Manufacturer", "")).upper()
+    if extracted_fields.get("MAH") or "JAPAN" in manufacturer:
         return "Japan"
     lic = extracted_fields.get("License Numbers", "")
     if lic and any(x in lic.upper() for x in ["CDSCO", "MFG", "IMP", "MDL", "MRP"]):

@@ -207,8 +207,8 @@ export default function Home() {
           </div>
         </div>
         <div className="swiss-grid" ref={timelineRef}>
-          <div className="col-span-8 col-start-3 relative py-10">
-            <div className="spine">
+          <div className="col-span-8 col-start-3 relative">
+            <div className="spine" style={{ top: '6px' }}>
               <div className="spine-progress" ref={progressRef}></div>
             </div>
             {[
@@ -216,8 +216,8 @@ export default function Home() {
               { phase: '02', title: 'Parameter Extraction', desc: 'Proprietary vision models extract device names, manufacturer details, lot numbers, and symbols with 99.9% accuracy.' },
               { phase: '03', title: 'Regulatory Cross-Check', desc: 'Extracted data points are compared against a real-time updated library of 24,000+ national regulatory requirements.' },
               { phase: '04', title: 'Compliance Certification', desc: 'A cryptographically signed compliance report is generated, detailing specific passes or flags for each target jurisdiction.' }
-            ].map((step, i) => (
-              <div key={i} className="pipeline-step pl-20 mb-24 relative">
+            ].map((step, i, arr) => (
+              <div key={i} className={`pipeline-step pl-20 relative ${i !== arr.length - 1 ? 'mb-24' : ''}`}>
                 <div className="step-marker"></div>
                 <div className="max-w-xl">
                   <span className="step-phase">Phase {step.phase}</span>

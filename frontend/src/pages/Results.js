@@ -229,6 +229,9 @@ function SearchBlock({ query }) {
                 onError={e => { e.target.src = '/images/devices/placeholder.jpg'; e.target.onerror = null; }}
               />
             </div>
+            <button className="btn-primary w-full mt-10" onClick={() => window.print()}>
+              Generate Compliance PDF
+            </button>
           </div>
         </div>
       </section>

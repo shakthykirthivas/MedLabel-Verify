@@ -181,8 +181,11 @@ def parse_fields(raw_text: str) -> dict:
         license_no = _f(t, r"\b((?:ML|MFG|IMP)\s*[\/\s]\s*(?:NFGIMD|NFGMD|MD|IMP)?[\/\s]\s*\d{4}[\/\s]\d{6})\b")
 
     # ── Rx Only ──────────────────────────────────────────────────────────────
-    rx_only = _f(t, r"\b(Rx\s*Only|R\s*[xX]\s*Only)\b")
-    if not rx_only:
+    # The Rx symbol is often misread by OCR as Px, Bx, FX, R*, or separated letters. "Only" can be misread as "ony", "omy", etc.
+    rx_raw = _f(t, r"\b([PFRB][xX\*\,\.\-\s]*(?:Only|ony|omy)|Rx\s*(?:Only|ony|omy)|R\s*x\s*(?:Only|ony|omy)|Romy|Rony)\b")
+    if rx_raw:
+        rx_only = "Rx Only"
+    else:
         rx_only = _f(t, r"(prescription\s*only|federal\s*law\s*restricts)")
 
     fields = {
