@@ -51,20 +51,40 @@ def parse_fields(raw_text: str) -> dict:
         # Brand + product keyword on one line e.g. "POLYMED NEBULIZER MASK"
         device_name = _f(t, r"^((?:POLYMED|OMRON|PHILIPS|SIEMENS|GE|BD|BECTON|MEDTRONIC|ABBOTT|STRYKER)\s+[A-Z][A-Z\s\-]{3,50})$", multiline=True)
     if not device_name:
+        # Look for Title-Case or ALL-CAPS standalone device name line
+        # Skip lines that are clearly descriptions, addresses, or codes
+        SKIP_PREFIXES = re.compile(
+            r"^(EN\s|Prefabricated|Quantity|REF|LOT|Mfg|Tel|Email|Batch|Exp|MD\s|EC\s|UDI|Consult|\(0|www\.|http)",
+            re.IGNORECASE
+        )
+        for line in t.splitlines():
+            stripped = line.strip()
+            if not stripped or len(stripped) < 4:
+                continue
+            if SKIP_PREFIXES.match(stripped):
+                continue
+            # Title Case or ALL-CAPS, letters/spaces/hyphens only, no long digit runs
+            if re.match(r"^[A-Z][A-Za-z\s\-]{3,40}$", stripped) and not re.search(r"\d{4,}", stripped):
+                device_name = stripped
+                break
+    if not device_name:
         device_name = _first_line(t)
 
     # ── Manufacturer ─────────────────────────────────────────────────────────
-    # Strategy: match text immediately after manufacturer keyword OR
-    # match "WORD MEDICURE/MEDICAL/etc. LTD." pattern — but STOP at address keywords
-    # Address keywords: Plot, Sector, Street, Road, No., Village, Phase, Block, Pin
     ADDRESS_STOP = r"(?=\s*(?:plot|sector|street|road|village|phase|block|pin\s*\d|p\.o\.|dist\.|p\.s\.|hsiidc|industrial|area|bahadur|faridabad|haryana|india|\d{6}))"
 
-    manufacturer = _f(t, r"(?:manufacturer|mfr\.?|made\s*by|mfg\.?\s*by|manufactured\s*by)[:\-]?\s*([A-Z][\w\s\.,\-&]+?(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|HEALTHCARE|SURGICAL|BIOTECH)\.?)" )
+    manufacturer = _f(t, r"(?:manufacturer|mfr\.?|made\s*by|mfg\.?\s*by|manufactured\s*by)[:\-]?\s*([A-Z][\w\s\.,\-&]+?(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|HEALTHCARE|SURGICAL|BIOTECH|EXPERTS)\.?)")
     if not manufacturer:
-        # Direct match: company name ending in LTD/MEDICURE etc., stop before address
-        manufacturer = _f(t, r"((?:[A-Z][A-Z\s&\-]{2,40}?\s+)(?:LTD\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDICAL|HEALTHCARE|SURGICAL)\.?)" + ADDRESS_STOP)
+        # Match company name on line immediately after manufacturer logo/address block
+        # Catches "MedDev Experts", "POLYMED Healthcare LTD" etc.
+        manufacturer = _f(t, r"^([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,4})\s*\n\s*(?:Shivalik|Plot|Sector|Road|Nagar|Street|Block|Phase|\d)", multiline=True)
     if not manufacturer:
-        manufacturer = _f(t, r"([\w][\w\s\-\.,]+(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|GlobalMed)\.?)")
+        manufacturer = _f(t, r"((?:[A-Z][A-Z\s&\-]{2,40}?\s+)(?:LTD\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDICAL|HEALTHCARE|SURGICAL|EXPERTS)\.?)" + ADDRESS_STOP)
+    if not manufacturer:
+        manufacturer = _f(t, r"([\w][\w\s\-\.,]+(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|GlobalMed|EXPERTS)\.?)")
+    # Safety: never let "Consult instructions" or similar slip through as manufacturer
+    if manufacturer and re.search(r"consult|instruction|warning|caution|sterile", manufacturer, re.IGNORECASE):
+        manufacturer = None
 
     # ── UDI ──────────────────────────────────────────────────────────────────
     # GS1 strict: (01) + 14 digits, optionally followed by (17)YYMMDD and (10)lot
@@ -88,16 +108,25 @@ def parse_fields(raw_text: str) -> dict:
     # ── Expiry Date ──────────────────────────────────────────────────────────
     expiry = _f(t, r"(?:use[\s\-]*by|expiry|expiration|exp\.?)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})")
     if not expiry:
-        expiry = _f(t, r"(\d{4}[\/\-\.]\d{2}[\/\-\.]\d{2})")
+        # Only match if it looks like a valid date (month 01-12, day 01-31)
+        m = re.search(r"(\d{4})[\/\-\.](\d{2})[\/\-\.](\d{2})", t, re.IGNORECASE)
+        if m and int(m.group(2)) <= 12 and int(m.group(3)) <= 31:
+            expiry = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
     if not expiry:
         expiry = _f(t, r"(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})")
     if not expiry:
-        # GS1 AI (17) YYMMDD → convert to 20YY-MM-DD
+        # GS1 AI (17) YYMMDD → convert to 20YY-MM
         raw_gs1 = _f(t, r"\(17\)\s*(\d{6})")
         if raw_gs1 and len(raw_gs1) == 6:
-            expiry = f"20{raw_gs1[0:2]}-{raw_gs1[2:4]}-{raw_gs1[4:6]}"
+            yy = raw_gs1[0:2]
+            mm = raw_gs1[2:4]
+            dd = raw_gs1[4:6]
+            expiry = f"20{yy}-{mm}-{dd}"
         elif raw_gs1:
             expiry = raw_gs1
+    if not expiry:
+        # Plain Exp. Date: 2025-06 or similar on label
+        expiry = _f(t, r"[Ee]xp\.?\s*[Dd]ate?\s*[:\-]?\s*(\d{4}[\-\/]\d{2}(?:[\-\/]\d{2})?)")
     if not expiry:
         expiry = _f(t, r"(\d{1,2}[\/\-]\d{4})")
 
@@ -141,11 +170,14 @@ def parse_fields(raw_text: str) -> dict:
     # ── Storage Conditions ───────────────────────────────────────────────────
     storage = _f(t, r"(?:storage|store\s*(?:at|between|below)|keep\s*(?:at|below|between))[:\-]?\s*(.+?)(?:\n|$)")
     if not storage:
-        # Umbrella symbol → Keep Dry
         storage = _f(t, r"\b([Kk]eep\s+[Dd]ry|[Ss]tore\s+in\s+a?\s*dry\s+place|[Pp]rotect\s+from\s+moisture)\b")
     if not storage:
-        # Temperature range e.g. "15°C to 25°C"
-        storage = _f(t, r"(-?\d+\s*[°℃]?\s*C\s*(?:to|[-–])\s*-?\d+\s*[°℃]?\s*C)")
+        # Temperature range: "15°C to 30°C" or "15oC - 30oC" or "15 C to 30 C"
+        storage = _f(t, r"(-?\d+\s*[°oO℃]?\s*[Cc]\s*(?:to|[-–])\s*-?\d+\s*[°oO℃]?\s*[Cc])")
+    if not storage:
+        # Two separate temperatures on label like "15°C ... 30°C"
+        # Match the range by finding both numbers near each other
+        storage = _f(t, r"(\d{1,2}\s*[°oO]?\s*[Cc]\b.*?\b\d{1,2}\s*[°oO]?\s*[Cc])")
     if not storage:
         storage = _f(t, r"(\d+\s*[°]?\s*C(?:\s*max)?)")
 
@@ -155,15 +187,16 @@ def parse_fields(raw_text: str) -> dict:
         mah = _f(t, r"(?:販売|製造|認証)[^\n]*")
 
     # ── UK Responsible Person ─────────────────────────────────────────────────
-    # ISO 5.1.2 EC REP symbol
     uk_rep = _f(t, r"(?:uk\s*responsible\s*person|uk\s*rep(?:resentative)?|ukrp)[:\-]?\s*(.+?)(?:\n|$)")
     if not uk_rep:
-        uk_rep = _f(t, r"EC\s*REP[:\-]?\s*(.+?)(?:\n|$)")
+        # EC REP box — company name follows on same line or next line
+        uk_rep = _f(t, r"EC\s*REP[:\-]?\s*([A-Z][A-Za-z][\w\s\.,\-&]{2,50})(?:\n|$)")
+    if not uk_rep:
+        uk_rep = _f(t, r"EC\s*REP\s*\n\s*([A-Z][A-Za-z][\w\s\.,\-&]{2,50})", multiline=True)
     if not uk_rep:
         uk_rep = _f(t, r"(?:authoris(?:ed|ed)\s*representative)[:\-]?\s*(.+?)(?:\n|$)")
 
     # ── License Numbers ───────────────────────────────────────────────────────
-    # Indian labels: "Mfg. Lic. No.: M/2019/000147" or "MFG/MD/2013/020147"
     license_no = _f(t, r"(?:mfg\.?\s*lic(?:ense|ence)?\.?\s*no\.?|manufacturing\s*licen[cs]e\s*(?:no\.?)?)[:\-]?\s*([A-Za-z0-9\/\-\.]{5,30})")
     if not license_no:
         license_no = _f(t, r"(?:imp(?:ort)?\s*lic(?:ense|ence)?\.?\s*no\.?)[:\-]?\s*([A-Za-z0-9\/\-\.]{5,30})")
@@ -179,6 +212,10 @@ def parse_fields(raw_text: str) -> dict:
     if not license_no:
         # MFG/MD/YYYY/NNNNNN pattern
         license_no = _f(t, r"\b((?:ML|MFG|IMP)\s*[\/\s]\s*(?:NFGIMD|NFGMD|MD|IMP)?[\/\s]\s*\d{4}[\/\s]\d{6})\b")
+    if not license_no:
+        # Alphanumeric license code pattern: e.g. "1232XX-112I-4545" or "1232XX-1121-4545"
+        # Format: digits+letters, hyphen-separated segments
+        license_no = _f(t, r"\b([A-Z0-9]{4,8}-[A-Z0-9]{3,6}-[A-Z0-9]{3,6})\b")
 
     # ── Rx Only ──────────────────────────────────────────────────────────────
     # The Rx symbol is often misread by OCR as Px, Bx, FX, R*, or separated letters. "Only" can be misread as "ony", "omy", etc.

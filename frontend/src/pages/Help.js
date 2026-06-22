@@ -45,6 +45,7 @@ const OCR_TIPS = [
   { icon: '✂️', title: 'Crop the Label', desc: 'Crop the image to show only the label area before uploading. Removing background noise helps the OCR engine focus on relevant content.' },
   { icon: '🔍', title: 'Use High Resolution', desc: 'Use 300 DPI or higher for scanned documents. Low-resolution images cause small text — such as UDI barcodes and lot numbers — to be missed.' },
   { icon: '📄', title: 'Prefer PDF for Documents', desc: 'For printed or electronic documents, upload as PDF whenever possible. PDF files preserve text fidelity better than photographed images.' },
+  { icon: '🧹', title: 'Clean the Label Surface', desc: 'Wipe dust, smudges, or moisture off the label before scanning. Dirty or reflective surfaces cause OCR to misread characters, especially small text like lot numbers and expiry dates.' },
 ];
 
 export default function Help() {
@@ -213,8 +214,6 @@ export default function Help() {
         <div className="swiss-grid">
           {OCR_TIPS.map((t, i) => (
             <div key={i} className="col-span-4 protocol-card">
-              <span className="protocol-index">0{i + 1} Protocol</span>
-              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>{t.icon}</div>
               <h3 className="protocol-title">{t.title}</h3>
               <p className="protocol-desc">{t.desc}</p>
             </div>

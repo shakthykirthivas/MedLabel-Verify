@@ -37,9 +37,10 @@ export default function Home() {
         autoAlpha: 0, filter: 'blur(20px)', scale: 1.05,
         duration: 1.5, ease: 'power2.out'
       });
-      gsap.to('#scan-line', {
-        top: '90%', duration: 3, repeat: -1, yoyo: true, ease: 'power1.inOut'
-      });
+      gsap.fromTo('#scan-line',
+        { top: '0%' },
+        { top: '100%', duration: 3, repeat: -1, yoyo: true, ease: 'power1.inOut' }
+      );
       gsap.to(progressRef.current, {
         height: '100%', ease: 'none',
         scrollTrigger: {
