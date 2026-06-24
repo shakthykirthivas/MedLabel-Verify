@@ -311,7 +311,14 @@ export default function Regulations() {
         </div>
         <div className="swiss-grid mb-20">
           <div className="col-span-12 overflow-x-auto">
-            <table className="matrix-ledger w-full border-collapse">
+            <table className="matrix-ledger w-full border-collapse" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+              </colgroup>
               <thead>
                 <tr className="border-b border-text/20">
                   <th className="py-6 text-left text-xs-bold opacity-30">Parameter Name</th>

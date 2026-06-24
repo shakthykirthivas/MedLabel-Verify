@@ -97,55 +97,6 @@ const DEVICE_DB = {
   },
 };
 
-function calcCompliance(extractedFields) {
-  const countries = ['USA', 'UK', 'India', 'Japan'];
-  const result = {};
-  let bestMatch = countries[0];
-  let bestPct = -1;
-
-  countries.forEach(country => {
-    const required = COUNTRY_REQUIREMENTS[country];
-    const found = required.filter(f => { const val = extractedFields[f]; return val && val.trim(); });
-    const missing = required.filter(f => { const val = extractedFields[f]; return !val || !val.trim(); });
-    const percentage = Math.round((found.length / required.length) * 100);
-    result[country] = { percentage, found, missing };
-    if (percentage > bestPct) { bestPct = percentage; bestMatch = country; }
-  });
-
-  return { compliance: result, best_match: bestMatch };
-}
-
-function simulateOCR(file) {
-  const allFields = [
-    'Device Name', 'Manufacturer', 'UDI', 'Lot Number',
-    'Expiry Date', 'Warnings', 'Storage Conditions', 'MAH',
-    'UK Responsible Person', 'License Numbers', 'Rx Only',
-    'UKCA marking', 'Manufacturing License No.', 'Import License No.',
-    'Japanese-language label', 'FDA-compliant labeling',
-  ];
-  const extracted = {};
-  const sampleValues = {
-    'Device Name': 'MedDevice Pro 3000',
-    'Manufacturer': 'MedCorp International Ltd.',
-    'UDI': '(01)07350048010030(11)221201(17)251201(10)B1234',
-    'Lot Number': 'LOT-2024-B1234',
-    'Expiry Date': '2025-12-01',
-    'Warnings': 'For single use only. Do not reuse.',
-    'Storage Conditions': 'Store at 15-25C. Keep dry.',
-    'MAH': 'Japan MedAuth Holdings K.K.',
-    'UK Responsible Person': 'UK MedRep Ltd, London, UK',
-    'License Numbers': 'MFG-LIC-IN-2023-00142',
-    'Rx Only': 'Rx Only',
-    'UKCA marking': 'UKCA',
-    'Manufacturing License No.': 'MFG-2024-00198',
-    'Import License No.': 'IMP-2024-00087',
-    'Japanese-language label': 'Medical Device Label v3',
-    'FDA-compliant labeling': 'FDA 510(k) Cleared',
-  };
-  allFields.forEach(f => { if (Math.random() > 0.2) extracted[f] = sampleValues[f]; });
-  return extracted;
-}
-
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -276,25 +227,32 @@ function SearchBlock({ query }) {
 function UploadBlock({ file }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const form = new FormData();
     form.append('file', file);
     fetch('http://localhost:8000/upload', { method: 'POST', body: form })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`Server error: ${r.status} ${r.statusText}`);
+        return r.json();
+      })
       .then(json => {
         if (json.error) throw new Error(json.error);
         setData(json);
       })
-      .catch(() => {
-        const extracted_fields = simulateOCR(file);
-        const { compliance, best_match } = calcCompliance(extracted_fields);
-        setData({ extracted_fields, compliance, best_match });
+      .catch((err) => {
+        console.error('Upload failed:', err);
+        setError(
+          `Could not connect to the analysis backend. Please ensure the backend server is running at http://localhost:8000. Error: ${err.message}`
+        );
       })
       .finally(() => setLoading(false));
   }, [file]);
 
   if (loading) return <LoadingScreen label="Extracting institutional data..." />;
+  if (error) return <ErrorScreen msg={error} />;
+  if (!data) return <ErrorScreen msg="No data received from the server." />;
 
   const { extracted_fields, compliance, best_match } = data;
   const countries = ['USA', 'UK', 'India', 'Japan'];
