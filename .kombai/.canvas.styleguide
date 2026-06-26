@@ -1,0 +1,74 @@
+{
+  "guides": [
+    {
+      "id": "style_d618282e35f9",
+      "name": "Lab-Grade Technical",
+      "tokens": {
+        "colors": {
+          "text-primary": "#000000",
+          "text-secondary": "#414A4C",
+          "border": "#E5E7EB",
+          "accent": "#20B2AA",
+          "background": "#FFFFFF"
+        },
+        "typography": {
+          "body": {
+            "family": "Space Grotesk",
+            "size": "text-base",
+            "url": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&display=swap"
+          },
+          "heading": {
+            "family": "Encode Sans",
+            "size": "text-7xl",
+            "url": "https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;600;700&display=swap"
+          }
+        },
+        "spacing": {
+          "container": "px-12",
+          "section": "py-32"
+        },
+        "radius": {
+          "default": "rounded-none"
+        }
+      },
+      "designInstructions": "# Lab-Grade Technical Design Language\n\nThis design system communicates institutional authority and technical precision through a \"Lab Grade\" aesthetic. It prioritizes information density and deterministic clarity over marketing ornamentation.\n\n### Layout Signatures\n- **Hairline Grids**: Define section boundaries and feature lists using strict 1px rules instead of shadows or colored backgrounds. Use a 4-column matrix for technical specifications.\n- **Horizontal Infrastructure Chains**: Visualize data flow (ERP -> MLV -> Production) using rigid horizontal chains with thin arrows.\n- **Terminal Readouts**: Use dark-mode terminal windows with standard window chrome to showcase API responses and technical implementation details.\n\n### Border & Shape Eccentricities\n- **Sharp Radii**: Every element uses a strict 0px corner radius (rounded-none). No rounded pills or cards.\n- **Hairline Boundaries**: Components are delineated by hairline borders (#E5E7EB) to maintain a sterile, high-ink-ratio feel.\n\n### Decorative Motifs\n- **Active Scan-Lines**: Incorporate vertical or horizontal sweeping scan-lines in (--k-color-accent) over imagery to simulate live verification.\n- **Metric HUDs**: Overlay technical metadata (FPS, Latency, Buffer IDs) in small, monospaced text around functional widgets.\n\n### Spacing & Density Rhythm\n- **Institutional Density**: High information density within components, balanced by generous section-level padding (py-32).\n- **Tabular Data**: Use editorial spec-sheet layouts (capability ledgers) where feature name, description, and metric are weighted equally on a single row.\n\n### Micro-Details\n- **Status Indicators**: Use small circular pips with a pulse effect for \"Live\" status.\n- **Technical Tags**: Use small, high-contrast badges with subtle background tints (#20B2AA at 0.1 opacity) for valid/invalid states.\n- **Typography**: Encode Sans for commanding headings; Space Grotesk for body and technical data readouts.",
+      "created": "2026-06-13T08:31:16.419134+00:00",
+      "modified": "2026-06-13T08:31:16.419134+00:00"
+    },
+    {
+      "id": "style_c30190fb491b",
+      "name": "Corporate Swiss Precision",
+      "tokens": {
+        "colors": {
+          "background": "#FFFFFF",
+          "text-primary": "#2A3439",
+          "text-secondary": "#2A3439",
+          "accent": "#00356B",
+          "border": "#E2E8F0"
+        },
+        "typography": {
+          "heading": {
+            "family": "Plus Jakarta Sans",
+            "size": "text-[84px]",
+            "url": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+          },
+          "body": {
+            "family": "IBM Plex Sans",
+            "size": "text-base",
+            "url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
+          }
+        },
+        "spacing": {
+          "section": "py-32",
+          "container": "px-10"
+        },
+        "radius": {
+          "default": "rounded-none"
+        }
+      },
+      "designInstructions": "# Corporate Swiss Precision Design Language\n\nThis design system is built on the International Typographic Style, emphasizing absolute clarity, institutional trust, and objective precision.\n\n### Layout Signatures\n- **12-Column Swiss Grid**: Use a strict 12-column grid for all page layouts. Headlines should often span 7-8 columns to command authority.\n- **Hairline Rules**: Use 1px rules in (#2A3439) at 0.1 opacity for section dividers and 1.0 opacity for primary component boundaries.\n- **Asymmetric Balance**: Balance large typography blocks with clinical macro-photography or high-density data tables.\n\n### Border & Shape Eccentricities\n- **Sharp Geometry**: 0px corner radius for all primary elements.\n- **Boxed Compositions**: Use minimal black borders around key imagery or data blocks to give them a \"physically printed\" appearance.\n\n### Decorative Motifs\n- **Scanning HUDs**: Use minimalist overlays on imagery featuring active scan lines in (--k-color-accent) and pulsed status indicators.\n- **Index Numbers**: Number key sections or steps using small, monospaced digits (e.g., 01, 02) to reinforce a rigorous process.\n\n### Spacing & Density Rhythm\n- **Bold Margins**: Generous use of white space to ensure maximum legibility and a premium, uncluttered feel.\n- **Capability Ledgers**: Present features as editorial spec-sheets with clear tabular alignment instead of cards.\n\n### Micro-Details\n- **Typography**: Plus Jakarta Sans (Extrabold) for headlines with tight tracking (-0.03em). IBM Plex Sans for body copy to provide a technical, functional contrast.\n- **Grayscale Accents**: Use grayscale imagery with high contrast and subtle navy tints to maintain a professional \"CEO-approved\" vibe.",
+      "created": "2026-06-13T08:32:20.128668+00:00",
+      "modified": "2026-06-13T08:32:20.128668+00:00"
+    }
+  ]
+}
