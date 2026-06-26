@@ -9,15 +9,55 @@ Supports:
 
 import re
 import io
+import os
+import shutil
 import logging
 
 logger = logging.getLogger(__name__)
 
+
+def _locate_tesseract() -> str | None:
+    """Find the tesseract binary across Windows / macOS / Linux.
+
+    Resolution order:
+      1. TESSERACT_CMD environment variable (explicit override)
+      2. tesseract on PATH (covers Homebrew, apt, choco, winget installs)
+      3. Common install locations per platform
+    """
+    env_path = os.environ.get("TESSERACT_CMD")
+    if env_path and os.path.exists(env_path):
+        return env_path
+
+    on_path = shutil.which("tesseract")
+    if on_path:
+        return on_path
+
+    candidates = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        "/opt/homebrew/bin/tesseract",   # macOS (Apple Silicon)
+        "/usr/local/bin/tesseract",      # macOS (Intel) / Linux
+        "/usr/bin/tesseract",            # Linux
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
 try:
     import pytesseract
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     from PIL import Image, ImageFilter, ImageEnhance
-    TESSERACT_OK = True
+    _tess_path = _locate_tesseract()
+    if _tess_path:
+        pytesseract.pytesseract.tesseract_cmd = _tess_path
+        logger.info("Using tesseract binary at: %s", _tess_path)
+        TESSERACT_OK = True
+    else:
+        TESSERACT_OK = False
+        logger.warning(
+            "tesseract binary not found — install Tesseract-OCR or set TESSERACT_CMD. OCR disabled."
+        )
 except ImportError:
     TESSERACT_OK = False
     logger.warning("pytesseract / Pillow not installed — OCR disabled")
@@ -107,7 +147,7 @@ def parse_fields(raw_text: str) -> dict:
         "Rx Only":               rx_only,
     }
 
-    return {k: (v.strip() if isinstance(v, str) else None) for k, v in fields.items()}
+    return {k: (_clean_value(v) if isinstance(v, str) else None) for k, v in fields.items()}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -208,10 +248,27 @@ def _extract_manufacturer(t: str) -> str:
     if manufacturer:
         return manufacturer
 
-    # 3. Company name ending in standard legal suffixes
-    manufacturer = _f(t, r"([\w][\w\s\-\.,]+(?:LTD\.?|LLC\.?|INC\.?|CORP\.?|PVT\.?\s*LTD\.?|MEDICURE|MEDTECH|MEDICAL|GlobalMed[®]?|EXPERTS)\.?)")
-    if manufacturer and not re.search(r"consult|instruction|warning|caution|sterile", manufacturer, re.IGNORECASE):
-        return manufacturer
+    # 3. Company name ending in a standard legal/brand suffix — scanned per line
+    #    so the match never spans newlines (which previously swallowed unrelated
+    #    text like "Consult instructions" and got the candidate rejected).
+    SUFFIX = (r"(?:Pvt\.?\s*Ltd\.?|Ltd\.?|LLC\.?|Inc\.?|Corp\.?|GmbH|S\.?A\.?|"
+              r"MediCure|MedTech|Medical|Healthcare|Surgical|Biotech|"
+              r"GlobalMed[®]?|Experts)")
+    SKIP = re.compile(r"consult|instruction|warning|caution|sterile|"
+                      r"\blic\.?\s*no|batch|date|use\s*by|\bexp\b", re.IGNORECASE)
+    company_re = re.compile(
+        r"([A-Za-z][A-Za-z&'\.\-]*(?:\s+[A-Za-z&'\.\-®™]+){0,5}?\s*" + SUFFIX + r")",
+        re.IGNORECASE,
+    )
+    for line in t.splitlines():
+        s = line.strip()
+        if len(s) < 5 or SKIP.search(s):
+            continue
+        m = company_re.search(s)
+        if m:
+            cand = m.group(1).strip(" ,.")
+            if 4 < len(cand) < 60:
+                return cand
 
     # 4. Look for company name with ® followed by address lines
     brand_with_addr = re.search(
@@ -235,32 +292,31 @@ def _extract_manufacturer(t: str) -> str:
 
 
 def _extract_udi(t: str) -> str:
-    """Extract UDI (Unique Device Identifier) — GS1, HIBC, or bare GTIN."""
+    """Extract UDI (Unique Device Identifier) — GS1, HIBC, or bare GTIN.
 
-    # 1. Explicit UDI label
-    udi = _f(t, r"(?:^|\s)UDI[:\-]?\s*(\(01\)[0-9A-Za-z\(\)\-]+)")
-    if udi:
-        return udi
+    Robust to common OCR noise: spaces inside the AI markers (e.g. "(1 7)"),
+    spaces splitting digit runs, and a "UDI"/"GTIN" label prefix.
+    """
 
-    # 2. Full GS1 string: (01)NNNNN...(17)NNNNNN(21)NNNNN... or (10)NNNNN
-    # Allow spaces between AI groups (OCR often adds spaces)
-    gs1 = re.search(
-        r"\(01\)\s*(\d{8,14})\s*(?:\((\d{2})\)\s*([A-Za-z0-9\-]+)\s*)*",
-        t
-    )
-    if gs1:
-        # Rebuild the full UDI string from the match area
-        full_match = gs1.group(0).strip()
-        # Try to get a longer match that includes all AI groups
-        start_pos = gs1.start()
-        extended = re.search(
-            r"\(01\)\s*\d{8,14}(?:\s*\(\d{2}\)\s*[A-Za-z0-9\-]+)*",
-            t[start_pos:]
+    # 1. GS1 application-identifier string starting at (01).
+    #    OCR frequently injects stray spaces — even *inside* the parentheses,
+    #    e.g. "(1 7)" instead of "(17)". So locate the (01) marker, take the
+    #    rest of that line, strip all whitespace, then match the clean GS1 run.
+    start = re.search(r"\(\s*0\s*1\s*\)", t)
+    if start:
+        segment = t[start.start():].split("\n", 1)[0]
+        compact = re.sub(r"\s+", "", segment)
+        gs1 = re.match(
+            r"\(01\)\d{8,14}(?:\(\d{2}\)[A-Za-z0-9\-]+)*",
+            compact
         )
-        if extended:
-            udi_str = re.sub(r'\s+', '', extended.group(0))  # Remove spaces
-            return udi_str
-        return re.sub(r'\s+', '', full_match)
+        if gs1:
+            return gs1.group(0)
+
+    # 2. Explicit UDI label followed by the identifier
+    udi = _f(t, r"(?:^|\s)UDI[:\-]?\s*(\(01\)[0-9A-Za-z\(\)\-\s]+)")
+    if udi:
+        return re.sub(r"\s+", "", udi)
 
     # 3. HIBC format
     udi = _f(t, r"(\+[A-Za-z0-9\/\-]{6,})")
@@ -278,18 +334,24 @@ def _extract_udi(t: str) -> str:
 def _extract_lot(t: str) -> str:
     """Extract lot/batch number."""
 
-    # 1. LOT symbol box — OCR reads LOT directly
-    lot = _f(t, r"\bLOT\s*[:\-]?\s*([A-Za-z0-9\-]{3,20})\b")
+    # 1. GS1 AI (10) — lot number (highly structured, check first)
+    lot = _f(t, r"\(10\)\s*([A-Za-z0-9\-]{3,25})")
     if lot:
         return lot
 
-    # 2. Lot/Batch with label
-    lot = _f(t, r"(?:lot|batch)\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Za-z0-9\-]{3,20})")
+    # 2. LOT symbol box — OCR reads LOT directly
+    # Remove \b at end — it cuts alphanumeric values like A2B10184 short
+    lot = _f(t, r"\bLOT[\)\]:]?\s*[:\-]?\s*([A-Za-z0-9\-]{3,25})")
     if lot:
         return lot
 
-    # 3. GS1 AI (10) — lot number
-    lot = _f(t, r"\(10\)\s*([A-Za-z0-9\-]{3,20})")
+    # 3. Batch No. label (common on Indian/EU labels)
+    lot = _f(t, r"[Bb]atch\s*[Nn]o\.?\s*[:\-]?\s*([A-Za-z0-9\-]{3,25})")
+    if lot:
+        return lot
+
+    # 4. Lot/Batch with label
+    lot = _f(t, r"(?:lot|batch)\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Za-z0-9\-]{3,25})")
     if lot:
         return lot
 
@@ -297,43 +359,48 @@ def _extract_lot(t: str) -> str:
 
 
 def _extract_expiry(t: str) -> str:
-    """Extract expiry/use-by date."""
+    """Extract expiry/use-by date.
 
-    # 1. USE BY / Expiry / Exp. with date
-    expiry = _f(t, r"(?:use[\s\-]*by|expiry|expiration|exp\.?)\s*[:\-]?\s*(\d{4}[\-\/\.]\d{1,2}[\-\/\.]\d{1,2})")
+    Note the labelled-date patterns allow an optional "Date" word, so
+    "Exp. Date : 2025-06" is recognised, and they are tried *before* any
+    bare-date fallback so a nearby "Mfg. Date" is never mistaken for expiry.
+    """
+
+    # Keyword for an expiry label (NOT manufacture date). Optional "Date" word.
+    KW = r"(?:use[\s\-]*by|expiry|expiration|exp\.?)(?:\s*date)?\s*[:\-]?\s*"
+
+    # 1. Labelled full date: YYYY-MM-DD
+    expiry = _f(t, KW + r"(\d{4}[\-\/\.]\d{1,2}[\-\/\.]\d{1,2})")
     if expiry:
         return _normalize_date(expiry)
 
-    expiry = _f(t, r"(?:use[\s\-]*by|expiry|expiration|exp\.?)\s*[:\-]?\s*(\d{1,2}[\-\/\.]\d{1,2}[\-\/\.]\d{2,4})")
+    # 2. Labelled full date: DD-MM-YYYY / MM-DD-YYYY
+    expiry = _f(t, KW + r"(\d{1,2}[\-\/\.]\d{1,2}[\-\/\.]\d{2,4})")
     if expiry:
         return _normalize_date(expiry)
 
-    # 2. Standalone YYYY-MM-DD near USE BY or date keywords
-    m = re.search(r"(\d{4})[\-\/\.](\d{2})[\-\/\.](\d{2})", t, re.IGNORECASE)
+    # 3. Labelled month-year: YYYY-MM  (e.g. "Exp. Date : 2025-06")
+    expiry = _f(t, KW + r"(\d{4}[\-\/\.]\d{1,2})\b")
+    if expiry:
+        return expiry.replace("/", "-").replace(".", "-")
+
+    # 4. GS1 AI (17) — date code. Standard is YYMMDD (6), but some labels
+    #    print YYYYMMDD (8). Handle both.
+    raw_gs1 = _f(t, r"\(17\)\s*(\d{6,8})")
+    if raw_gs1:
+        if len(raw_gs1) == 8:           # YYYYMMDD
+            return f"{raw_gs1[0:4]}-{raw_gs1[4:6]}-{raw_gs1[6:8]}"
+        if len(raw_gs1) == 6:           # YYMMDD
+            return f"20{raw_gs1[0:2]}-{raw_gs1[2:4]}-{raw_gs1[4:6]}"
+
+    # 5. Standalone full date anywhere (only when nothing labelled was found)
+    m = re.search(r"(\d{4})[\-\/\.](\d{2})[\-\/\.](\d{2})", t)
     if m and int(m.group(2)) <= 12 and int(m.group(3)) <= 31:
         return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
 
-    # 3. DD/MM/YYYY or MM/DD/YYYY format
     expiry = _f(t, r"(\d{2}[\-\/\.]\d{2}[\-\/\.]\d{4})")
     if expiry:
         return _normalize_date(expiry)
-
-    # 4. GS1 AI (17) YYMMDD → convert to 20YY-MM-DD
-    raw_gs1 = _f(t, r"\(17\)\s*(\d{6})")
-    if raw_gs1 and len(raw_gs1) == 6:
-        yy = raw_gs1[0:2]
-        mm = raw_gs1[2:4]
-        dd = raw_gs1[4:6]
-        return f"20{yy}-{mm}-{dd}"
-
-    # 5. MM/YYYY or YYYY-MM format
-    expiry = _f(t, r"(?:use[\s\-]*by|expiry|expiration|exp\.?)\s*[:\-]?\s*(\d{4}[\-\/]\d{2})")
-    if expiry:
-        return expiry
-
-    expiry = _f(t, r"(\d{1,2}[\-\/]\d{4})")
-    if expiry:
-        return expiry
 
     return None
 
@@ -571,36 +638,135 @@ def _ocr_image(file_bytes: bytes) -> str:
     if img.mode not in ('L', 'RGB'):
         img = img.convert('RGB')
 
-    # Strategy: try multiple preprocessing approaches, pick best result
-    results = []
-
-    # Approach 1: Grayscale + upscale + sharpen
     img_gray = img.convert('L')
     width, height = img_gray.size
-    scale = max(2, min(4, 3000 // max(width, 1)))  # Scale to ~3000px wide
-    img_up = img_gray.resize((width * scale, height * scale), Image.LANCZOS)
+
+    # ── Pass A: moderate scale (~3000px) ──────────────────────────────────────
+    # Good for large titles, symbols and overall layout — picks the primary text.
+    scale = min(4.0, max(1.0, 3000 / max(width, 1)))
+    img_up = img_gray.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
     img_sharp = img_up.filter(ImageFilter.SHARPEN)
-    text1 = pytesseract.image_to_string(img_sharp, config='--oem 3 --psm 6')
-    results.append(text1)
 
-    # Approach 2: Enhanced contrast + threshold
+    results = []
+    results.append(pytesseract.image_to_string(img_sharp, config='--oem 3 --psm 6'))
+
     img_enhanced = ImageEnhance.Contrast(img_up).enhance(2.0)
-    # Apply simple threshold to make text crisper
     img_thresh = img_enhanced.point(lambda x: 0 if x < 140 else 255, '1')
-    text2 = pytesseract.image_to_string(img_thresh, config='--oem 3 --psm 6')
-    results.append(text2)
+    results.append(pytesseract.image_to_string(img_thresh, config='--oem 3 --psm 6'))
 
-    # Approach 3: PSM 4 (assume single column) for better block detection
-    text3 = pytesseract.image_to_string(img_sharp, config='--oem 3 --psm 4')
-    results.append(text3)
+    results.append(pytesseract.image_to_string(img_sharp, config='--oem 3 --psm 4'))
 
-    # Pick the result with the most text content (usually the most accurate)
+    # Primary text = the fullest moderate-scale read (keeps titles & layout).
     best = max(results, key=lambda r: len(r.strip()))
 
-    logger.info("OCR results lengths: approach1=%d, approach2=%d, approach3=%d, using=%d",
-                len(text1.strip()), len(text2.strip()), len(text3.strip()), len(best.strip()))
+    # ── Pass B: zoomed lower-band blocks ──────────────────────────────────────
+    # The manufacturer / responsible-person rows are small print, often laid out
+    # in two columns that a full-width scan reads *across* and garbles. We zoom
+    # into the lower band split into left/right halves so each column is read on
+    # its own, then APPEND any new lines (never replacing the primary text, so
+    # large titles are preserved).
+    extra = _new_lines(best, _recover_blocks(img_gray))
+    if extra:
+        best = best + "\n" + "\n".join(extra)
+
+    logger.info("OCR primary length=%d (after small-text merge)", len(best.strip()))
+
+    # The human-readable UDI under a barcode is small print and is usually lost
+    # in a whole-label scan. Run a focused pass to recover it, then splice it in.
+    gs1 = _recover_gs1(img_gray)
+    if gs1 and gs1 not in re.sub(r"\s+", "", best):
+        best = best + f"\nUDI {gs1}"
+        logger.info("Recovered UDI/GS1 from barcode region: %s", gs1)
 
     return best
+
+
+def _recover_blocks(img_gray) -> str:
+    """Recover small-print blocks from the lower band of the label.
+
+    Crops the lower band into left half, right half and full width, zooms each
+    and OCRs separately. Splitting into columns prevents a two-column row
+    (e.g. Manufacturer | EC REP) from being read across and garbled.
+    """
+    w, h = img_gray.size
+    # (left, top, right, bottom) as fractions — manufacturer/rep rows sit low.
+    # The bottom ~8% (barcode strip) is excluded so it doesn't corrupt the block.
+    regions = [
+        (0.0, 0.55, 0.48, 0.92),  # lower-left column (usually Manufacturer)
+        (0.48, 0.55, 1.0, 0.92),  # lower-right column (usually EC REP / rep)
+        (0.0, 0.55, 1.0, 0.92),   # full lower band (fallback / single column)
+    ]
+    chunks = []
+    for x0, y0, x1, y1 in regions:
+        crop = img_gray.crop((int(w * x0), int(h * y0), int(w * x1), int(h * y1)))
+        cw, ch = crop.size
+        if cw < 10 or ch < 10:
+            continue
+        big = crop.resize((cw * 5, ch * 5), Image.LANCZOS).filter(ImageFilter.SHARPEN)
+        try:
+            chunks.append(pytesseract.image_to_string(big, config='--oem 3 --psm 6'))
+        except Exception:
+            continue
+    return "\n".join(chunks)
+
+
+def _new_lines(base: str, extra_text: str) -> list:
+    """Return lines from extra_text not already represented in base.
+
+    Used to merge a high-resolution pass into the primary OCR text — we only
+    add lines whose content is genuinely new, comparing on alphanumerics so
+    OCR whitespace/punctuation noise doesn't block a match.
+    """
+    def norm(s: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+
+    seen = {norm(l) for l in base.splitlines() if norm(l)}
+    out = []
+    for line in extra_text.splitlines():
+        key = norm(line)
+        # Exact-duplicate dedup only. We deliberately do NOT drop lines that are
+        # substrings of an existing line: a clean "MedDev Experts" must survive
+        # even though a noisy "...meddevexperts@gmail.com..." line contains it.
+        if len(key) < 4 or key in seen:
+            continue
+        seen.add(key)
+        out.append(line.strip())
+    return out
+
+
+def _recover_gs1(img_gray) -> str:
+    """Zoom into the lower region of the label to recover the GS1/UDI digits.
+
+    Barcode human-readable text is tiny; a whole-label OCR pass mangles it.
+    We crop candidate lower bands, upscale heavily, and OCR with a digit/paren
+    whitelist (PSM 6) so Tesseract only considers GS1 characters.
+    """
+    w, h = img_gray.size
+    # (left, top, right, bottom) as fractions — barcodes usually sit low.
+    candidate_boxes = [
+        (0.0, 0.82, 1.0, 1.0),
+        (0.40, 0.78, 1.0, 1.0),
+        (0.40, 0.70, 1.0, 1.0),
+        (0.0, 0.72, 1.0, 1.0),
+    ]
+    for x0, y0, x1, y1 in candidate_boxes:
+        crop = img_gray.crop((int(w * x0), int(h * y0), int(w * x1), int(h * y1)))
+        cw, ch = crop.size
+        if cw < 10 or ch < 10:
+            continue
+        big = crop.resize((cw * 5, ch * 5), Image.LANCZOS).filter(ImageFilter.SHARPEN)
+        try:
+            txt = pytesseract.image_to_string(
+                big,
+                config="--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789()",
+            )
+        except Exception:
+            continue
+        compact = re.sub(r"\s+", "", txt)
+        m = re.search(r"\(01\)\d{12,14}(?:\(\d{2}\)[0-9]+)*", compact)
+        if m:
+            return m.group(0)
+    return None
 
 
 def _ocr_pdf(file_bytes: bytes) -> str:
@@ -634,6 +800,14 @@ def _f(text: str, pattern: str, multiline: bool = False):
     except Exception:
         pass
     return None
+
+
+def _clean_value(value: str):
+    """Collapse embedded newlines / repeated whitespace into a tidy single line."""
+    value = re.sub(r"\s*\n\s*", ", ", value.strip())   # newlines -> ", "
+    value = re.sub(r"(?:,\s*)+", ", ", value)            # dedupe commas
+    value = re.sub(r"[ \t]+", " ", value)
+    return value.strip(" ,") or None
 
 
 def _first_line(text: str):
