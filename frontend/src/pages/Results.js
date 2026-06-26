@@ -232,7 +232,7 @@ function UploadBlock({ file }) {
   useEffect(() => {
     const form = new FormData();
     form.append('file', file);
-    fetch('http://localhost:8000/upload', { method: 'POST', body: form })
+    fetch('https://medlabel-verify.onrender.com/upload', { method: 'POST', body: form })
       .then(r => {
         if (!r.ok) throw new Error(`Server error: ${r.status} ${r.statusText}`);
         return r.json();
