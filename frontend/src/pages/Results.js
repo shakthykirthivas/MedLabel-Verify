@@ -244,7 +244,7 @@ function UploadBlock({ file }) {
       .catch((err) => {
         console.error('Upload failed:', err);
         setError(
-          `Could not connect to the analysis backend. Please ensure the backend server is running at http://localhost:8000. Error: ${err.message}`
+          `Upload failed: ${err.message}`
         );
       })
       .finally(() => setLoading(false));
